@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light dark; }
+
+body { @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100; }
+
+.container-hero { @apply mx-auto max-w-6xl px-4; }
