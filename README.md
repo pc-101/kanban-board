@@ -9,6 +9,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 - Persist board state in the browser (`localStorage`) so your columns survive refreshes.
 - Responsive, horizontally scrollable layout optimized for multiple columns.
 - Light/dark theme toggle that respects the system preference via `next-themes`.
+- Adjust the board accent color with a built-in palette, saved per browser.
 
 ## Prerequisites
 

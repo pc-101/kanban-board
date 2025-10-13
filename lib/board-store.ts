@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 export type Task = { id: string; title: string; description?: string };
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
+  boardColor: string;
   columns: Column[];
   tasks: Record<string, Task>;
   addTask: (columnId: string, title: string) => void;
@@ -14,9 +15,11 @@ export type BoardState = {
   removeTask: (taskId: string, columnId: string) => void;
   hydrate: () => void;
   persist: () => void;
+  setBoardColor: (color: string) => void;
 };
 
 const STORAGE_KEY = "kanban-board:v1";
+const DEFAULT_BOARD_COLOR = "#0ea5e9";
 
 const initial = () => {
   const todoId = nanoid(6);
@@ -24,6 +27,7 @@ const initial = () => {
   const doneId = nanoid(6);
   const t1 = nanoid(6), t2 = nanoid(6), t3 = nanoid(6);
   return {
+    boardColor: DEFAULT_BOARD_COLOR,
     columns: [
       { id: todoId, title: "Todo", taskIds: [t1, t2] },
       { id: doingId, title: "In Progress", taskIds: [t3] },
@@ -43,13 +47,21 @@ export const useBoard = create<BoardState>((set, get) => ({
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) set(JSON.parse(raw));
+      if (raw) {
+        const data = JSON.parse(raw);
+        set((state) => ({
+          ...state,
+          columns: data.columns ?? state.columns,
+          tasks: data.tasks ?? state.tasks,
+          boardColor: data.boardColor ?? state.boardColor ?? DEFAULT_BOARD_COLOR,
+        }));
+      }
     } catch {}
   },
   persist: () => {
     if (typeof window === "undefined") return;
-    const { columns, tasks } = get();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ columns, tasks }));
+    const { columns, tasks, boardColor } = get();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ columns, tasks, boardColor }));
   },
   addTask: (columnId, title) => {
     const id = nanoid(6);
@@ -93,6 +105,10 @@ export const useBoard = create<BoardState>((set, get) => ({
       to.taskIds = next;
       return { ...s };
     });
+    get().persist();
+  },
+  setBoardColor: (color) => {
+    set(() => ({ boardColor: color }));
     get().persist();
   },
 }));
