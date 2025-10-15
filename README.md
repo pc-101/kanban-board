@@ -14,7 +14,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 ## Prerequisites
 
 - Node.js 18.17+ or 20+ (matching Next.js 14 requirements).
-- `pnpm` package manager (swap with `npm`/`yarn` if you prefer and adjust commands).
+ - `pnpm` package manager (v9 recommended; swap with `npm`/`yarn` if you prefer and adjust commands).
 
 ## Getting Started
 
@@ -31,7 +31,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 ## Available Scripts
 
 - `pnpm dev` – start the Next.js development server with hot reloading.
-- `pnpm build` – create an optimized production build.
+- `pnpm build` – create an optimized production build (also generates static assets in `out/` when using GitHub Pages).
 - `pnpm start` – launch the compiled app in production mode.
 - `pnpm lint` – run ESLint checks.
 
