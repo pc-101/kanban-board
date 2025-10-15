@@ -25,18 +25,19 @@ const initial = () => {
   const todoId = nanoid(6);
   const doingId = nanoid(6);
   const doneId = nanoid(6);
-  const t1 = nanoid(6), t2 = nanoid(6), t3 = nanoid(6);
+  const t1 = nanoid(6), t2 = nanoid(6), t3 = nanoid(6), t4 = nanoid(6);
   return {
     boardColor: DEFAULT_BOARD_COLOR,
     columns: [
       { id: todoId, title: "Todo", taskIds: [t1, t2] },
       { id: doingId, title: "In Progress", taskIds: [t3] },
-      { id: doneId, title: "Done", taskIds: [] },
+      { id: doneId, title: "Done", taskIds: [t4] },
     ],
     tasks: {
       [t1]: { id: t1, title: "Design wireframes" },
       [t2]: { id: t2, title: "Set up CI" },
       [t3]: { id: t3, title: "Build Drag & Drop" },
+      [t4]: { id: t4, title: "Brainstorm initial design" }
     },
   };
 };
