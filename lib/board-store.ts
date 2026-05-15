@@ -2,7 +2,13 @@
 import { create } from "zustand";
 import { nanoid } from "nanoid";
 
-export type Task = { id: string; title: string; description?: string };
+export type Task = {
+  id: string;
+  title: string;
+  assignee?: string;
+  description?: string;
+  dueDate?: string;
+};
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
   boardColor: string;
@@ -13,6 +19,7 @@ export type BoardState = {
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
+  updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   hydrate: () => void;
   persist: () => void;
   setBoardColor: (color: string) => void;
@@ -34,10 +41,31 @@ const initial = () => {
       { id: doneId, title: "Done", taskIds: [t4] },
     ],
     tasks: {
-      [t1]: { id: t1, title: "Design wireframes" },
-      [t2]: { id: t2, title: "Set up CI" },
-      [t3]: { id: t3, title: "Build Drag & Drop" },
-      [t4]: { id: t4, title: "Brainstorm initial design" }
+      [t1]: {
+        id: t1,
+        title: "Design wireframes",
+        assignee: "Pat",
+        dueDate: "2026-05-22",
+        description: "Sketch the first pass of the board layout and task detail flow.",
+      },
+      [t2]: {
+        id: t2,
+        title: "Set up CI",
+        assignee: "Sam",
+        dueDate: "2026-05-24",
+        description: "Create a basic build workflow for pull requests and production deploys.",
+      },
+      [t3]: {
+        id: t3,
+        title: "Build Drag & Drop",
+        assignee: "Alex",
+        description: "Wire column reordering with @hello-pangea/dnd and persist changes locally.",
+      },
+      [t4]: {
+        id: t4,
+        title: "Brainstorm initial design",
+        description: "Capture the first set of layout ideas and user flow notes.",
+      },
     },
   };
 };
@@ -80,6 +108,20 @@ export const useBoard = create<BoardState>((set, get) => ({
       col.taskIds = col.taskIds.filter(id => id !== taskId);
       delete s.tasks[taskId];
       return { ...s };
+    });
+    get().persist();
+  },
+  updateTask: (taskId, updates) => {
+    set((s) => {
+      const task = s.tasks[taskId];
+      if (!task) return s;
+      return {
+        ...s,
+        tasks: {
+          ...s.tasks,
+          [taskId]: { ...task, ...updates },
+        },
+      };
     });
     get().persist();
   },
