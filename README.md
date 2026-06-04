@@ -32,7 +32,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 
 - `pnpm dev` – start the Next.js development server with hot reloading.
 - `pnpm build` – create an optimized production build (also generates static assets in `out/` when using GitHub Pages).
-- `pnpm start` – launch the compiled app in production mode.
+- `pnpm start` – serve the exported static site from `out/` after running `pnpm build`.
 - `pnpm lint` – run ESLint checks.
 
 ## Project Structure
