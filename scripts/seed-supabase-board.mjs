@@ -26,6 +26,7 @@ function loadLocalEnv() {
 
 const snapshot = {
   boardColor: "#0ea5e9",
+  assignees: ["Pat", "Sam", "Alex"],
   columns: [
     { id: "todo", title: "Todo", taskIds: ["design-wireframes", "setup-ci"] },
     { id: "in-progress", title: "In Progress", taskIds: ["build-dnd"] },

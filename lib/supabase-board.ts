@@ -3,6 +3,7 @@ import { getSupabase } from "./supabase";
 
 export type BoardSnapshot = {
   boardColor: string;
+  assignees: string[];
   columns: Column[];
   tasks: Record<string, Task>;
 };

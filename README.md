@@ -6,6 +6,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 
 - Drag tasks across columns with smooth reordering powered by `@hello-pangea/dnd`.
 - Rename columns and add or delete tasks without leaving the board.
+- Create assignees and assign tasks from the shared assignee list.
 - Sync board state to Supabase when configured, with `localStorage` as a local fallback.
 - Responsive, horizontally scrollable layout optimized for multiple columns.
 - Light/dark theme toggle that respects the system preference via `next-themes`.

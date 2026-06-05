@@ -13,6 +13,7 @@ export type Task = {
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
   boardColor: string;
+  assignees: string[];
   columns: Column[];
   tasks: Record<string, Task>;
   isLoading: boolean;
@@ -22,6 +23,8 @@ export type BoardState = {
   moveTask: (taskId: string, fromColId: string, toColId: string, toIndex: number) => void;
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
+  addAssignee: (name: string) => void;
+  removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   hydrate: () => Promise<void>;
@@ -39,6 +42,7 @@ const initial = () => {
   const t1 = nanoid(6), t2 = nanoid(6), t3 = nanoid(6), t4 = nanoid(6);
   return {
     boardColor: DEFAULT_BOARD_COLOR,
+    assignees: ["Pat", "Sam", "Alex"],
     columns: [
       { id: todoId, title: "Todo", taskIds: [t1, t2] },
       { id: doingId, title: "In Progress", taskIds: [t3] },
@@ -74,10 +78,40 @@ const initial = () => {
   };
 };
 
+const uniqueNames = (names: Array<string | undefined>) => {
+  const seen = new Set<string>();
+  return names.reduce<string[]>((result, name) => {
+    const trimmed = name?.trim();
+    if (!trimmed) return result;
+
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return result;
+
+    seen.add(key);
+    result.push(trimmed);
+    return result;
+  }, []);
+};
+
+const normalizeSnapshot = (snapshot: Partial<BoardSnapshot>, fallback: BoardState): BoardSnapshot => {
+  const tasks = snapshot.tasks ?? fallback.tasks;
+  const assignees = snapshot.assignees?.length
+    ? uniqueNames(snapshot.assignees)
+    : uniqueNames(Object.values(tasks).map((task) => task.assignee));
+
+  return {
+    columns: snapshot.columns ?? fallback.columns,
+    tasks,
+    boardColor: snapshot.boardColor ?? fallback.boardColor ?? DEFAULT_BOARD_COLOR,
+    assignees,
+  };
+};
+
 const snapshotFromState = (state: BoardState): BoardSnapshot => ({
   columns: state.columns,
   tasks: state.tasks,
   boardColor: state.boardColor,
+  assignees: state.assignees,
 });
 
 const readLocalSnapshot = () => {
@@ -104,12 +138,7 @@ export const useBoard = create<BoardState>((set, get) => ({
 
     const local = readLocalSnapshot();
     if (local) {
-      set((state) => ({
-        ...state,
-        columns: local.columns ?? state.columns,
-        tasks: local.tasks ?? state.tasks,
-        boardColor: local.boardColor ?? state.boardColor ?? DEFAULT_BOARD_COLOR,
-      }));
+      set((state) => ({ ...state, ...normalizeSnapshot(local, state) }));
     }
 
     set({ isLoading: true, syncError: undefined });
@@ -121,13 +150,14 @@ export const useBoard = create<BoardState>((set, get) => ({
     }
 
     if (data) {
+      const snapshot = normalizeSnapshot(data, get());
       set((state) => ({
         ...state,
-        ...data,
+        ...snapshot,
         isLoading: false,
         syncError: undefined,
       }));
-      writeLocalSnapshot(data);
+      writeLocalSnapshot(snapshot);
       return;
     }
 
@@ -186,6 +216,34 @@ export const useBoard = create<BoardState>((set, get) => ({
   addColumn: (title) => {
     const id = nanoid(6);
     set((s) => ({ ...s, columns: [...s.columns, { id, title, taskIds: [] }] }));
+    void get().persist();
+  },
+  addAssignee: (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    set((s) => {
+      const exists = s.assignees.some((assignee) => assignee.toLowerCase() === trimmed.toLowerCase());
+      if (exists) return s;
+      return { ...s, assignees: [...s.assignees, trimmed] };
+    });
+    void get().persist();
+  },
+  removeAssignee: (name) => {
+    set((s) => {
+      const tasks = Object.fromEntries(
+        Object.entries(s.tasks).map(([id, task]) => [
+          id,
+          task.assignee === name ? { ...task, assignee: undefined } : task,
+        ]),
+      );
+
+      return {
+        ...s,
+        assignees: s.assignees.filter((assignee) => assignee !== name),
+        tasks,
+      };
+    });
     void get().persist();
   },
   moveTask: (taskId, fromColId, toColId, toIndex) => {

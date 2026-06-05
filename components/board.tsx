@@ -2,8 +2,9 @@
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useEffect, useMemo } from "react";
 import { useBoard } from "@/lib/board-store";
-import ColumnView from "./column";
+import AssigneeManager from "./assignee-manager";
 import BoardColorPicker from "./board-color-picker";
+import ColumnView from "./column";
 
 export default function Board() {
   const columns = useBoard((state) => state.columns);
@@ -38,13 +39,16 @@ export default function Board() {
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <BoardColorPicker />
-        <div className="text-xs text-slate-500 dark:text-slate-400">
-          {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
-          {!syncError && isLoading ? <span>Loading board...</span> : null}
-          {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
+      <div className="mb-3 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BoardColorPicker />
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
+            {!syncError && isLoading ? <span>Loading board...</span> : null}
+            {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
+          </div>
         </div>
+        <AssigneeManager />
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">

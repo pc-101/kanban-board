@@ -11,6 +11,7 @@ type TaskForm = {
 };
 
 export default function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void }) {
+  const assignees = useBoard((state) => state.assignees);
   const updateTask = useBoard((state) => state.updateTask);
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<TaskForm>({
@@ -19,6 +20,10 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
     dueDate: task.dueDate ?? "",
     description: task.description ?? "",
   });
+
+  const assigneeOptions = task.assignee && !assignees.includes(task.assignee)
+    ? [...assignees, task.assignee]
+    : assignees;
 
   useEffect(() => {
     setMounted(true);
@@ -36,7 +41,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
     if (!form.title.trim()) return;
     updateTask(task.id, {
       title: form.title.trim(),
-      assignee: form.assignee.trim() || undefined,
+      assignee: form.assignee || undefined,
       dueDate: form.dueDate || undefined,
       description: form.description.trim() || undefined,
     });
@@ -85,12 +90,16 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Assignee</span>
-              <input
+              <select
                 value={form.assignee}
                 onChange={(event) => setForm((current) => ({ ...current, assignee: event.target.value }))}
-                placeholder="Unassigned"
-                className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
-              />
+                className="w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950"
+              >
+                <option value="">Unassigned</option>
+                {assigneeOptions.map((assignee) => (
+                  <option value={assignee} key={assignee}>{assignee}</option>
+                ))}
+              </select>
             </label>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Due date</span>
