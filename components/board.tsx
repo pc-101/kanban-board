@@ -9,8 +9,12 @@ export default function Board() {
   const columns = useBoard((state) => state.columns);
   const hydrate = useBoard((state) => state.hydrate);
   const boardColor = useBoard((state) => state.boardColor);
+  const isLoading = useBoard((state) => state.isLoading);
+  const isSyncing = useBoard((state) => state.isSyncing);
+  const syncError = useBoard((state) => state.syncError);
+
   useEffect(() => {
-    hydrate();
+    void hydrate();
   }, [hydrate]);
 
   const { accent, subtleAccent } = useMemo(() => {
@@ -34,7 +38,14 @@ export default function Board() {
 
   return (
     <>
-      <BoardColorPicker />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <BoardColorPicker />
+        <div className="text-xs text-slate-500 dark:text-slate-400">
+          {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
+          {!syncError && isLoading ? <span>Loading board...</span> : null}
+          {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
+        </div>
+      </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">
           {columns.map((col) => (

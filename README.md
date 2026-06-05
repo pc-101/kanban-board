@@ -6,7 +6,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 
 - Drag tasks across columns with smooth reordering powered by `@hello-pangea/dnd`.
 - Rename columns and add or delete tasks without leaving the board.
-- Persist board state in the browser (`localStorage`) so your columns survive refreshes.
+- Sync board state to Supabase when configured, with `localStorage` as a local fallback.
 - Responsive, horizontally scrollable layout optimized for multiple columns.
 - Light/dark theme toggle that respects the system preference via `next-themes`.
 - Adjust the board accent color with a built-in palette, saved per browser.
@@ -14,7 +14,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 ## Prerequisites
 
 - Node.js 18.17+ or 20+ (matching Next.js 14 requirements).
- - `pnpm` package manager (v9 recommended; swap with `npm`/`yarn` if you prefer and adjust commands).
+- `pnpm` package manager (v9 recommended; swap with `npm`/`yarn` if you prefer and adjust commands).
 
 ## Getting Started
 
@@ -51,12 +51,32 @@ components/
   theme-toggle.tsx # Light/dark switch
 lib/
   board-store.ts   # Zustand store, seed data, and persistence helpers
+  supabase.ts      # Lazy Supabase browser client
+  supabase-board.ts # Board load/save helpers
 tailwind.config.js # Tailwind configuration
 postcss.config.js  # PostCSS setup
 ```
 
+## Supabase Setup
+
+1. Create a Supabase project.
+2. Open the SQL editor and run `docs/supabase-setup.sql`.
+3. Copy `.env.local.example` to `.env.local` and fill in your project URL and anon/publishable key:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+4. Run the app locally with `pnpm dev`. The board loads from Supabase when the environment variables are present and falls back to `localStorage` if they are missing.
+
+For GitHub Pages, add these as repository secrets or environment variables during the build if you want the deployed static bundle to point at Supabase:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SUPABASE_BOARD_ID` (optional; defaults to `default`)
+
+The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
+
 ## Notes
 
-- Board data persists in `localStorage` under the key `kanban-board:v1`. Clear it (e.g., through DevTools) to reset the board.
+- Board data is cached in `localStorage` under the key `kanban-board:v1` and synced to Supabase when configured.
 - The initial seeds are generated at runtime with `nanoid`, so IDs differ per browser session.
 - For deployments, ensure your platform supports Next.js 14 (App Router) and Node.js 18+ runtime.

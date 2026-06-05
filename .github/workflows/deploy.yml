@@ -37,6 +37,10 @@ jobs:
 
       - name: Build Next.js app
         run: pnpm build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_BOARD_ID: ${{ secrets.NEXT_PUBLIC_SUPABASE_BOARD_ID }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

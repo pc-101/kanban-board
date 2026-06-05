@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { nanoid } from "nanoid";
+import { loadBoardFromSupabase, saveBoardToSupabase, type BoardSnapshot } from "./supabase-board";
 
 export type Task = {
   id: string;
@@ -14,14 +15,17 @@ export type BoardState = {
   boardColor: string;
   columns: Column[];
   tasks: Record<string, Task>;
+  isLoading: boolean;
+  isSyncing: boolean;
+  syncError?: string;
   addTask: (columnId: string, title: string) => void;
   moveTask: (taskId: string, fromColId: string, toColId: string, toIndex: number) => void;
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
-  hydrate: () => void;
-  persist: () => void;
+  hydrate: () => Promise<void>;
+  persist: () => Promise<void>;
   setBoardColor: (color: string) => void;
 };
 
@@ -70,27 +74,73 @@ const initial = () => {
   };
 };
 
+const snapshotFromState = (state: BoardState): BoardSnapshot => ({
+  columns: state.columns,
+  tasks: state.tasks,
+  boardColor: state.boardColor,
+});
+
+const readLocalSnapshot = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) as Partial<BoardSnapshot> : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeLocalSnapshot = (snapshot: BoardSnapshot) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+};
+
 export const useBoard = create<BoardState>((set, get) => ({
   ...initial(),
-  hydrate: () => {
+  isLoading: false,
+  isSyncing: false,
+  hydrate: async () => {
     if (typeof window === "undefined") return;
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        set((state) => ({
-          ...state,
-          columns: data.columns ?? state.columns,
-          tasks: data.tasks ?? state.tasks,
-          boardColor: data.boardColor ?? state.boardColor ?? DEFAULT_BOARD_COLOR,
-        }));
-      }
-    } catch {}
+
+    const local = readLocalSnapshot();
+    if (local) {
+      set((state) => ({
+        ...state,
+        columns: local.columns ?? state.columns,
+        tasks: local.tasks ?? state.tasks,
+        boardColor: local.boardColor ?? state.boardColor ?? DEFAULT_BOARD_COLOR,
+      }));
+    }
+
+    set({ isLoading: true, syncError: undefined });
+    const { data, error } = await loadBoardFromSupabase();
+
+    if (error) {
+      set({ isLoading: false, syncError: error.message });
+      return;
+    }
+
+    if (data) {
+      set((state) => ({
+        ...state,
+        ...data,
+        isLoading: false,
+        syncError: undefined,
+      }));
+      writeLocalSnapshot(data);
+      return;
+    }
+
+    set({ isLoading: false });
+    void get().persist();
   },
-  persist: () => {
-    if (typeof window === "undefined") return;
-    const { columns, tasks, boardColor } = get();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ columns, tasks, boardColor }));
+  persist: async () => {
+    const snapshot = snapshotFromState(get());
+    writeLocalSnapshot(snapshot);
+
+    set({ isSyncing: true, syncError: undefined });
+    const { error } = await saveBoardToSupabase(snapshot);
+    set({ isSyncing: false, syncError: error?.message });
   },
   addTask: (columnId, title) => {
     const id = nanoid(6);
@@ -100,7 +150,7 @@ export const useBoard = create<BoardState>((set, get) => ({
       s.tasks[id] = { id, title };
       return { ...s };
     });
-    get().persist();
+    void get().persist();
   },
   removeTask: (taskId, columnId) => {
     set((s) => {
@@ -109,7 +159,7 @@ export const useBoard = create<BoardState>((set, get) => ({
       delete s.tasks[taskId];
       return { ...s };
     });
-    get().persist();
+    void get().persist();
   },
   updateTask: (taskId, updates) => {
     set((s) => {
@@ -123,7 +173,7 @@ export const useBoard = create<BoardState>((set, get) => ({
         },
       };
     });
-    get().persist();
+    void get().persist();
   },
   renameColumn: (columnId, title) => {
     set((s) => {
@@ -131,12 +181,12 @@ export const useBoard = create<BoardState>((set, get) => ({
       if (col) col.title = title;
       return { ...s };
     });
-    get().persist();
+    void get().persist();
   },
   addColumn: (title) => {
     const id = nanoid(6);
     set((s) => ({ ...s, columns: [...s.columns, { id, title, taskIds: [] }] }));
-    get().persist();
+    void get().persist();
   },
   moveTask: (taskId, fromColId, toColId, toIndex) => {
     set((s) => {
@@ -148,10 +198,10 @@ export const useBoard = create<BoardState>((set, get) => ({
       to.taskIds = next;
       return { ...s };
     });
-    get().persist();
+    void get().persist();
   },
   setBoardColor: (color) => {
     set(() => ({ boardColor: color }));
-    get().persist();
+    void get().persist();
   },
 }));
