@@ -9,6 +9,7 @@ import ColumnView from "./column";
 export default function Board() {
   const columns = useBoard((state) => state.columns);
   const hydrate = useBoard((state) => state.hydrate);
+  const syncFromRemote = useBoard((state) => state.syncFromRemote);
   const boardColor = useBoard((state) => state.boardColor);
   const isLoading = useBoard((state) => state.isLoading);
   const isSyncing = useBoard((state) => state.isSyncing);
@@ -16,7 +17,16 @@ export default function Board() {
 
   useEffect(() => {
     void hydrate();
-  }, [hydrate]);
+
+    const poll = () => {
+      if (document.visibilityState === "visible") {
+        void useBoard.getState().syncFromRemote();
+      }
+    };
+
+    const interval = window.setInterval(poll, 10000);
+    return () => window.clearInterval(interval);
+  }, [hydrate, syncFromRemote]);
 
   const { accent, subtleAccent } = useMemo(() => {
     if (boardColor.startsWith("#") && boardColor.length === 7) {

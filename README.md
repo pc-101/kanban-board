@@ -8,6 +8,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 - Rename columns and add or delete tasks without leaving the board.
 - Create assignees and assign tasks from the shared assignee list.
 - Sync board state to Supabase when configured, with `localStorage` as a local fallback.
+- Poll Supabase every 10 seconds to pick up newer board changes from other browser sessions.
 - Responsive, horizontally scrollable layout optimized for multiple columns.
 - Light/dark theme toggle that respects the system preference via `next-themes`.
 - Adjust the board accent color with a built-in palette, saved per browser.
@@ -82,6 +83,8 @@ For GitHub Pages, add these as repository secrets or environment variables durin
 - `NEXT_PUBLIC_SUPABASE_BOARD_ID` (optional; defaults to `default`)
 
 The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
+
+The collaboration model is intentionally simple: each active board polls Supabase every 10 seconds and applies the newest remote snapshot. This is last-write-wins synchronization, not Google Docs-style operational transform or CRDT conflict resolution.
 
 ## Notes
 

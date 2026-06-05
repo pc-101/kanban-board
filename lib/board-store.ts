@@ -1,7 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import { loadBoardFromSupabase, saveBoardToSupabase, type BoardSnapshot } from "./supabase-board";
+import { loadBoardFromSupabase, saveBoardToSupabase, type BoardSnapshot, type RemoteBoard } from "./supabase-board";
 
 export type Task = {
   id: string;
@@ -18,6 +18,7 @@ export type BoardState = {
   tasks: Record<string, Task>;
   isLoading: boolean;
   isSyncing: boolean;
+  lastRemoteUpdatedAt?: string;
   syncError?: string;
   addTask: (columnId: string, title: string) => void;
   moveTask: (taskId: string, fromColId: string, toColId: string, toIndex: number) => void;
@@ -29,6 +30,7 @@ export type BoardState = {
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   hydrate: () => Promise<void>;
   persist: () => Promise<void>;
+  syncFromRemote: () => Promise<void>;
   setBoardColor: (color: string) => void;
 };
 
@@ -129,6 +131,22 @@ const writeLocalSnapshot = (snapshot: BoardSnapshot) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
 };
 
+const remoteIsNewer = (remoteUpdatedAt?: string | null, currentUpdatedAt?: string) => {
+  if (!remoteUpdatedAt) return true;
+  if (!currentUpdatedAt) return true;
+  return new Date(remoteUpdatedAt).getTime() > new Date(currentUpdatedAt).getTime();
+};
+
+const applyRemoteBoard = (remote: RemoteBoard, fallback: BoardState) => {
+  const snapshot = normalizeSnapshot(remote.snapshot, fallback);
+  writeLocalSnapshot(snapshot);
+  return {
+    ...snapshot,
+    lastRemoteUpdatedAt: remote.updatedAt ?? fallback.lastRemoteUpdatedAt,
+    syncError: undefined,
+  };
+};
+
 export const useBoard = create<BoardState>((set, get) => ({
   ...initial(),
   isLoading: false,
@@ -150,27 +168,46 @@ export const useBoard = create<BoardState>((set, get) => ({
     }
 
     if (data) {
-      const snapshot = normalizeSnapshot(data, get());
       set((state) => ({
         ...state,
-        ...snapshot,
+        ...applyRemoteBoard(data, state),
         isLoading: false,
-        syncError: undefined,
       }));
-      writeLocalSnapshot(snapshot);
       return;
     }
 
     set({ isLoading: false });
     void get().persist();
   },
+  syncFromRemote: async () => {
+    const state = get();
+    if (state.isLoading || state.isSyncing) return;
+
+    const { data, error } = await loadBoardFromSupabase();
+
+    if (error) {
+      set({ syncError: error.message });
+      return;
+    }
+
+    if (!data || !remoteIsNewer(data.updatedAt, get().lastRemoteUpdatedAt)) return;
+
+    set((current) => ({
+      ...current,
+      ...applyRemoteBoard(data, current),
+    }));
+  },
   persist: async () => {
     const snapshot = snapshotFromState(get());
     writeLocalSnapshot(snapshot);
 
     set({ isSyncing: true, syncError: undefined });
-    const { error } = await saveBoardToSupabase(snapshot);
-    set({ isSyncing: false, syncError: error?.message });
+    const { data, error } = await saveBoardToSupabase(snapshot);
+    set({
+      isSyncing: false,
+      lastRemoteUpdatedAt: data?.updatedAt ?? get().lastRemoteUpdatedAt,
+      syncError: error?.message,
+    });
   },
   addTask: (columnId, title) => {
     const id = nanoid(6);
