@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "npx serve@latest out -l 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "node scripts/seed-supabase-board.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "18.0.1",

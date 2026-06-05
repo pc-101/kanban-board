@@ -34,6 +34,7 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 - `pnpm build` – create an optimized production build (also generates static assets in `out/` when using GitHub Pages).
 - `pnpm start` – serve the exported static site from `out/` after running `pnpm build`.
 - `pnpm lint` – run ESLint checks.
+- `pnpm db:seed` – seed or reset the configured Supabase board row from `.env.local`.
 
 ## Project Structure
 
@@ -53,6 +54,8 @@ lib/
   board-store.ts   # Zustand store, seed data, and persistence helpers
   supabase.ts      # Lazy Supabase browser client
   supabase-board.ts # Board load/save helpers
+scripts/
+  seed-supabase-board.mjs # Upsert the starter board into Supabase
 tailwind.config.js # Tailwind configuration
 postcss.config.js  # PostCSS setup
 ```
@@ -65,7 +68,11 @@ postcss.config.js  # PostCSS setup
    ```bash
    cp .env.local.example .env.local
    ```
-4. Run the app locally with `pnpm dev`. The board loads from Supabase when the environment variables are present and falls back to `localStorage` if they are missing.
+4. Seed the initial board row:
+   ```bash
+   pnpm db:seed
+   ```
+5. Run the app locally with `pnpm dev`. The board loads from Supabase when the environment variables are present and falls back to `localStorage` if they are missing.
 
 For GitHub Pages, add these as repository secrets or environment variables during the build if you want the deployed static bundle to point at Supabase:
 
