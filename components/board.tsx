@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useBoard } from "@/lib/board-store";
 import AssigneeManager from "./assignee-manager";
 import BoardColorPicker from "./board-color-picker";
+import BoardSwitcher from "./board-switcher";
 import ColumnView from "./column";
 
 export default function Board() {
@@ -51,14 +52,17 @@ export default function Board() {
     <>
       <div className="mb-3 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <BoardColorPicker />
+          <BoardSwitcher />
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
             {!syncError && isLoading ? <span>Loading board...</span> : null}
             {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
           </div>
         </div>
-        <AssigneeManager />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <BoardColorPicker />
+          <AssigneeManager />
+        </div>
       </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">

@@ -84,6 +84,8 @@ For GitHub Pages, add these as repository secrets or environment variables durin
 
 The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
 
+Each project board is stored as a separate row in `public.boards`, and the board switcher loads the selected row by ID.
+
 The collaboration model is intentionally simple: each active board polls Supabase every 10 seconds and applies the newest remote snapshot. This is last-write-wins synchronization, not Google Docs-style operational transform or CRDT conflict resolution.
 
 ## Notes

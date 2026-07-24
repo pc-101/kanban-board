@@ -1,7 +1,15 @@
 "use client";
 import { create } from "zustand";
 import { nanoid } from "nanoid";
-import { loadBoardFromSupabase, saveBoardToSupabase, type BoardSnapshot, type RemoteBoard } from "./supabase-board";
+import {
+  DEFAULT_BOARD_ID,
+  listBoardsFromSupabase,
+  loadBoardFromSupabase,
+  saveBoardToSupabase,
+  type BoardMeta,
+  type BoardSnapshot,
+  type RemoteBoard,
+} from "./supabase-board";
 
 export type Task = {
   id: string;
@@ -12,8 +20,11 @@ export type Task = {
 };
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
+  activeBoardId: string;
+  boardTitle: string;
   boardColor: string;
   assignees: string[];
+  boards: BoardMeta[];
   columns: Column[];
   tasks: Record<string, Task>;
   isLoading: boolean;
@@ -28,21 +39,28 @@ export type BoardState = {
   removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
+  createBoard: (title: string) => Promise<void>;
+  switchBoard: (boardId: string) => Promise<void>;
   hydrate: () => Promise<void>;
   persist: () => Promise<void>;
   syncFromRemote: () => Promise<void>;
   setBoardColor: (color: string) => void;
 };
 
-const STORAGE_KEY = "kanban-board:v1";
+const STORAGE_PREFIX = "kanban-board:v2";
+const LEGACY_STORAGE_KEY = "kanban-board:v1";
+const ACTIVE_BOARD_KEY = `${STORAGE_PREFIX}:active`;
 const DEFAULT_BOARD_COLOR = "#0ea5e9";
+const DEFAULT_BOARD_TITLE = "Kanban Board";
 
-const initial = () => {
+const createStarterSnapshot = (boardTitle = DEFAULT_BOARD_TITLE): BoardSnapshot => {
   const todoId = nanoid(6);
   const doingId = nanoid(6);
   const doneId = nanoid(6);
   const t1 = nanoid(6), t2 = nanoid(6), t3 = nanoid(6), t4 = nanoid(6);
+
   return {
+    boardTitle,
     boardColor: DEFAULT_BOARD_COLOR,
     assignees: ["Pat", "Sam", "Alex"],
     columns: [
@@ -80,6 +98,20 @@ const initial = () => {
   };
 };
 
+const createEmptyBoardSnapshot = (boardTitle: string): BoardSnapshot => ({
+  boardTitle,
+  boardColor: DEFAULT_BOARD_COLOR,
+  assignees: [],
+  columns: [
+    { id: nanoid(6), title: "Todo", taskIds: [] },
+    { id: nanoid(6), title: "In Progress", taskIds: [] },
+    { id: nanoid(6), title: "Done", taskIds: [] },
+  ],
+  tasks: {},
+});
+
+const initialSnapshot = createStarterSnapshot();
+
 const uniqueNames = (names: Array<string | undefined>) => {
   const seen = new Set<string>();
   return names.reduce<string[]>((result, name) => {
@@ -102,6 +134,7 @@ const normalizeSnapshot = (snapshot: Partial<BoardSnapshot>, fallback: BoardStat
     : uniqueNames(Object.values(tasks).map((task) => task.assignee));
 
   return {
+    boardTitle: snapshot.boardTitle ?? fallback.boardTitle ?? DEFAULT_BOARD_TITLE,
     columns: snapshot.columns ?? fallback.columns,
     tasks,
     boardColor: snapshot.boardColor ?? fallback.boardColor ?? DEFAULT_BOARD_COLOR,
@@ -110,25 +143,29 @@ const normalizeSnapshot = (snapshot: Partial<BoardSnapshot>, fallback: BoardStat
 };
 
 const snapshotFromState = (state: BoardState): BoardSnapshot => ({
+  boardTitle: state.boardTitle,
   columns: state.columns,
   tasks: state.tasks,
   boardColor: state.boardColor,
   assignees: state.assignees,
 });
 
-const readLocalSnapshot = () => {
+const boardStorageKey = (boardId: string) => `${STORAGE_PREFIX}:board:${boardId}`;
+
+const readLocalSnapshot = (boardId: string) => {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(boardStorageKey(boardId)) ?? (boardId === DEFAULT_BOARD_ID ? localStorage.getItem(LEGACY_STORAGE_KEY) : null);
     return raw ? JSON.parse(raw) as Partial<BoardSnapshot> : null;
   } catch {
     return null;
   }
 };
 
-const writeLocalSnapshot = (snapshot: BoardSnapshot) => {
+const writeLocalSnapshot = (boardId: string, snapshot: BoardSnapshot) => {
   if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  localStorage.setItem(boardStorageKey(boardId), JSON.stringify(snapshot));
+  localStorage.setItem(ACTIVE_BOARD_KEY, boardId);
 };
 
 const remoteIsNewer = (remoteUpdatedAt?: string | null, currentUpdatedAt?: string) => {
@@ -139,28 +176,83 @@ const remoteIsNewer = (remoteUpdatedAt?: string | null, currentUpdatedAt?: strin
 
 const applyRemoteBoard = (remote: RemoteBoard, fallback: BoardState) => {
   const snapshot = normalizeSnapshot(remote.snapshot, fallback);
-  writeLocalSnapshot(snapshot);
+  writeLocalSnapshot(remote.id, snapshot);
   return {
+    activeBoardId: remote.id,
     ...snapshot,
     lastRemoteUpdatedAt: remote.updatedAt ?? fallback.lastRemoteUpdatedAt,
     syncError: undefined,
   };
 };
 
+const mergeBoards = (boards: BoardMeta[], board: BoardMeta) => {
+  const withoutBoard = boards.filter((item) => item.id !== board.id);
+  return [board, ...withoutBoard];
+};
+
 export const useBoard = create<BoardState>((set, get) => ({
-  ...initial(),
+  activeBoardId: DEFAULT_BOARD_ID,
+  ...initialSnapshot,
+  boards: [{ id: DEFAULT_BOARD_ID, title: DEFAULT_BOARD_TITLE, updatedAt: null }],
   isLoading: false,
   isSyncing: false,
   hydrate: async () => {
     if (typeof window === "undefined") return;
 
-    const local = readLocalSnapshot();
+    const storedBoardId = localStorage.getItem(ACTIVE_BOARD_KEY) || DEFAULT_BOARD_ID;
+    set({ activeBoardId: storedBoardId });
+
+    const local = readLocalSnapshot(storedBoardId);
     if (local) {
       set((state) => ({ ...state, ...normalizeSnapshot(local, state) }));
     }
 
     set({ isLoading: true, syncError: undefined });
-    const { data, error } = await loadBoardFromSupabase();
+
+    const boardList = await listBoardsFromSupabase();
+    if (boardList.error) {
+      set({ isLoading: false, syncError: boardList.error.message });
+      return;
+    }
+
+    if (boardList.data.length) {
+      set({ boards: boardList.data });
+    }
+
+    const selectedId = boardList.data.some((board) => board.id === storedBoardId)
+      ? storedBoardId
+      : boardList.data[0]?.id ?? storedBoardId;
+
+    const { data, error } = await loadBoardFromSupabase(selectedId);
+
+    if (error) {
+      set({ isLoading: false, syncError: error.message });
+      return;
+    }
+
+    if (data) {
+      set((state) => ({
+        ...state,
+        ...applyRemoteBoard(data, state),
+        isLoading: false,
+      }));
+      return;
+    }
+
+    set({ activeBoardId: selectedId, isLoading: false });
+    void get().persist();
+  },
+  switchBoard: async (boardId) => {
+    if (boardId === get().activeBoardId) return;
+
+    set({ activeBoardId: boardId, isLoading: true, syncError: undefined, lastRemoteUpdatedAt: undefined });
+
+    const local = readLocalSnapshot(boardId);
+    if (local) {
+      set((state) => ({ ...state, ...normalizeSnapshot(local, state) }));
+    }
+
+    const { data, error } = await loadBoardFromSupabase(boardId);
 
     if (error) {
       set({ isLoading: false, syncError: error.message });
@@ -177,13 +269,31 @@ export const useBoard = create<BoardState>((set, get) => ({
     }
 
     set({ isLoading: false });
-    void get().persist();
+  },
+  createBoard: async (title) => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+
+    const boardId = `board-${nanoid(8)}`;
+    const snapshot = createEmptyBoardSnapshot(trimmed);
+    const boardMeta = { id: boardId, title: trimmed, updatedAt: null };
+
+    set((state) => ({
+      ...state,
+      activeBoardId: boardId,
+      ...snapshot,
+      boards: mergeBoards(state.boards, boardMeta),
+      lastRemoteUpdatedAt: undefined,
+      syncError: undefined,
+    }));
+    writeLocalSnapshot(boardId, snapshot);
+    await get().persist();
   },
   syncFromRemote: async () => {
     const state = get();
     if (state.isLoading || state.isSyncing) return;
 
-    const { data, error } = await loadBoardFromSupabase();
+    const { data, error } = await loadBoardFromSupabase(state.activeBoardId);
 
     if (error) {
       set({ syncError: error.message });
@@ -198,16 +308,19 @@ export const useBoard = create<BoardState>((set, get) => ({
     }));
   },
   persist: async () => {
-    const snapshot = snapshotFromState(get());
-    writeLocalSnapshot(snapshot);
+    const state = get();
+    const snapshot = snapshotFromState(state);
+    writeLocalSnapshot(state.activeBoardId, snapshot);
 
     set({ isSyncing: true, syncError: undefined });
-    const { data, error } = await saveBoardToSupabase(snapshot);
-    set({
+    const { data, error } = await saveBoardToSupabase(state.activeBoardId, snapshot);
+    const updatedAt = data?.updatedAt ?? get().lastRemoteUpdatedAt;
+    set((current) => ({
       isSyncing: false,
-      lastRemoteUpdatedAt: data?.updatedAt ?? get().lastRemoteUpdatedAt,
+      lastRemoteUpdatedAt: updatedAt,
       syncError: error?.message,
-    });
+      boards: mergeBoards(current.boards, { id: current.activeBoardId, title: current.boardTitle, updatedAt: updatedAt ?? null }),
+    }));
   },
   addTask: (columnId, title) => {
     const id = nanoid(6);

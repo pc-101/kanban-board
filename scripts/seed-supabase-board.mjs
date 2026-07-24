@@ -25,6 +25,7 @@ function loadLocalEnv() {
 }
 
 const snapshot = {
+  boardTitle: "Kanban Board",
   boardColor: "#0ea5e9",
   assignees: ["Pat", "Sam", "Alex"],
   columns: [
