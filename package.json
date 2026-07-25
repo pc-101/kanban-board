@@ -15,7 +15,8 @@
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
     "supabase:status": "supabase status",
-    "supabase:env": "node scripts/write-local-supabase-env.mjs"
+    "supabase:env": "node scripts/write-local-supabase-env.mjs",
+    "supabase:dump:seed": "supabase db dump --local --schema public --data-only -f supabase/seed.sql"
   },
   "dependencies": {
     "@hello-pangea/dnd": "18.0.1",
