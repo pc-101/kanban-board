@@ -1,105 +1,121 @@
 # Kanban Board
 
-A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename columns inline, add tasks on the fly, switch between light and dark themes, and keep progress synced locally through browser storage.
+A Next.js 14 Kanban board for organizing project work across multiple boards. It includes drag-and-drop tasks, editable task details, assignees, board colors, simple Supabase sync, local Docker-backed Supabase development, and GitHub Pages deployment support.
 
 ## Features
 
-- Drag tasks across columns with smooth reordering powered by `@hello-pangea/dnd`.
-- Rename columns and add or delete tasks without leaving the board.
-- Create assignees and assign tasks from the shared assignee list.
-- Sync board state to Supabase when configured, with `localStorage` as a local fallback.
-- Poll Supabase every 10 seconds to pick up newer board changes from other browser sessions.
-- Responsive, horizontally scrollable layout optimized for multiple columns.
-- Light/dark theme toggle that respects the system preference via `next-themes`.
-- Adjust the board accent color with a built-in palette, saved per browser.
+- Create and switch between multiple project boards.
+- Drag tasks across columns with `@hello-pangea/dnd`.
+- Add, delete, and reorder tasks.
+- Click tasks to edit title, assignee, description, and due date.
+- Create shared assignees and assign them to tasks.
+- Customize board accent colors.
+- Sync to Supabase when configured, with `localStorage` as fallback/cache.
+- Poll Supabase every 10 seconds for newer remote board updates.
+- Toggle light/dark mode with `next-themes`.
+- Export statically for GitHub Pages.
+
+## Tech Stack
+
+- Next.js 14 App Router
+- React 18
+- TypeScript
+- Tailwind CSS
+- Zustand
+- Supabase
+- @hello-pangea/dnd
+- GitHub Pages
 
 ## Prerequisites
 
-- Node.js 18.17+ or 20+ (matching Next.js 14 requirements).
-- `pnpm` package manager (v9 recommended; swap with `npm`/`yarn` if you prefer and adjust commands).
+- Node.js 18.17+ or 20+
+- `pnpm` v9 recommended
+- Docker Desktop for local Supabase development
+- A hosted Supabase project for production deployment
 
-## Getting Started
+## Quick Start
 
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-2. Run the development server:
-   ```bash
-   pnpm dev
-   ```
-3. Open `http://localhost:3000` to interact with the board. Try adding tasks and dragging them between columns.
+Install dependencies:
 
-## Available Scripts
+```bash
+pnpm install
+```
 
-- `pnpm dev` – start the Next.js development server with hot reloading.
-- `pnpm build` – create an optimized production build (also generates static assets in `out/` when using GitHub Pages).
-- `pnpm start` – serve the exported static site from `out/` after running `pnpm build`.
-- `pnpm lint` – run ESLint checks.
-- `pnpm db:seed` – seed or reset one configured Supabase board row from `.env.local`.
-- `pnpm db:seed:dev` – reset the local Supabase database and load `supabase/seed.sql`.
-- `pnpm supabase:start` – start the local Supabase Docker stack.
-- `pnpm supabase:stop` – stop the local Supabase Docker stack.
-- `pnpm supabase:reset` – reset local Supabase from migrations and seed data.
-- `pnpm supabase:env` – write `.env.development.local` from the running local Supabase stack.
+Start the full local environment:
+
+```bash
+pnpm dev:local
+```
+
+Open the app:
+
+```text
+http://localhost:3000
+```
+
+Open local Supabase Studio:
+
+```text
+http://127.0.0.1:54323
+```
+
+## Common Scripts
+
+| Command | Description |
+| --- | --- |
+| `pnpm dev` | Start the Next.js dev server only. |
+| `pnpm dev:local` | Start local Supabase, generate local env, and run Next dev. |
+| `pnpm dev:local:reset` | Start local Supabase, reset local DB from migrations/seeds, generate local env, and run Next dev. |
+| `pnpm build` | Build the static production app. |
+| `pnpm start` | Serve the exported `out/` directory after a build. |
+| `pnpm lint` | Run ESLint. |
+| `pnpm supabase:start` | Start local Supabase Docker containers. |
+| `pnpm supabase:stop` | Stop local Supabase Docker containers. |
+| `pnpm supabase:reset` | Rebuild local DB from migrations and `seed.sql`. |
+| `pnpm supabase:status` | Print local Supabase URLs and keys. |
+| `pnpm supabase:env` | Write `.env.development.local` from local Supabase status. |
+| `pnpm supabase:dump:seed` | Save current local public data into `supabase/seed.sql`. |
+| `pnpm db:seed` | Seed one configured hosted Supabase board row from env values. |
+
+## Local Vs Production
+
+Local development uses Docker-backed Supabase:
+
+```text
+Next dev server -> local Supabase Docker -> local seeded data
+```
+
+Production uses the static GitHub Pages app and your hosted Supabase project:
+
+```text
+GitHub Pages static app -> hosted Supabase project -> production data
+```
+
+## Documentation
+
+- [Project Guide](docs/project-guide.md) - architecture, state management, Supabase setup, migrations, seeds, sync behavior, and deployment notes.
+- [Supabase Setup SQL](docs/supabase-setup.sql) - manual SQL fallback for hosted Supabase setup.
 
 ## Project Structure
 
-```
-app/
-  layout.tsx       # Root layout with header and theme provider
-  page.tsx         # Kanban board page shell
-  globals.css      # Tailwind layer setup and global styles
-components/
-  board.tsx        # Drag-and-drop board wrapper
-  column.tsx       # Column view with inline editing
-  task-card.tsx    # Individual task card with delete control
-  header.tsx       # Top navigation with theme toggle
-  theme-provider.tsx
-  theme-toggle.tsx # Light/dark switch
-lib/
-  board-store.ts   # Zustand store, seed data, and persistence helpers
-  supabase.ts      # Lazy Supabase browser client
-  supabase-board.ts # Board load/save helpers
-scripts/
-  seed-supabase-board.mjs # Upsert the starter board into Supabase
-tailwind.config.js # Tailwind configuration
-postcss.config.js  # PostCSS setup
+```text
+app/                    Next.js app router files
+components/             Board UI and interaction components
+lib/                    Zustand store and Supabase helpers
+scripts/                Supabase seeding/env helper scripts
+supabase/               Local Supabase config, migrations, and seed data
+docs/                   Deeper project and setup documentation
+.github/workflows/      GitHub Pages deployment workflow
 ```
 
-## Supabase Setup
+## Deployment
 
-Use local Supabase for development and the hosted Supabase project for production. The schema is tracked in `supabase/migrations/`, and mock dev boards live in `supabase/seed.sql`, so local testing cannot mutate production rows.
+This project is configured for static export and GitHub Pages. Production Supabase values should be set as GitHub repository secrets:
 
-1. Install and start Docker Desktop.
-2. Start the local Supabase stack:
-   ```bash
-   pnpm supabase:start
-   ```
-3. Generate the local development env file from the running stack:
-   ```bash
-   pnpm supabase:env
-   ```
-4. Reset/seed the local database with mock project boards:
-   ```bash
-   pnpm db:seed:dev
-   ```
-5. Run the app locally with `pnpm dev`. Next.js reads `.env.development.local`, so the local app points at the Docker-backed Supabase stack.
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_BOARD_ID
+```
 
-For production, run `docs/supabase-setup.sql` in the hosted Supabase project or apply the matching migration there, then configure GitHub Pages with production secrets:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_SUPABASE_BOARD_ID` (optional; defaults to `default`)
-
-Avoid putting production Supabase values in `.env.development.local`. Also avoid using `.env.local` for production credentials on your development machine; treat it as a personal local override because Next.js can load it for local commands. The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
-
-Each project board is stored as a separate row in `public.boards`, and the board switcher loads the selected row by ID.
-
-The collaboration model is intentionally simple: each active board polls Supabase every 10 seconds and applies the newest remote snapshot. This is last-write-wins synchronization, not Google Docs-style operational transform or CRDT conflict resolution.
-
-## Notes
-
-- Board data is cached in `localStorage` under the key `kanban-board:v1` and synced to Supabase when configured.
-- The initial seeds are generated at runtime with `nanoid`, so IDs differ per browser session.
-- For deployments, ensure your platform supports Next.js 14 (App Router) and Node.js 18+ runtime.
+The deployment workflow builds the app and publishes the exported `out/` directory to GitHub Pages.
