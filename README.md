@@ -36,7 +36,12 @@ A Next.js 14 starter for organizing work on a drag-and-drop Kanban board. Rename
 - `pnpm build` – create an optimized production build (also generates static assets in `out/` when using GitHub Pages).
 - `pnpm start` – serve the exported static site from `out/` after running `pnpm build`.
 - `pnpm lint` – run ESLint checks.
-- `pnpm db:seed` – seed or reset the configured Supabase board row from `.env.local`.
+- `pnpm db:seed` – seed or reset one configured Supabase board row from `.env.local`.
+- `pnpm db:seed:dev` – reset the local Supabase database and load `supabase/seed.sql`.
+- `pnpm supabase:start` – start the local Supabase Docker stack.
+- `pnpm supabase:stop` – stop the local Supabase Docker stack.
+- `pnpm supabase:reset` – reset local Supabase from migrations and seed data.
+- `pnpm supabase:env` – write `.env.development.local` from the running local Supabase stack.
 
 ## Project Structure
 
@@ -64,25 +69,30 @@ postcss.config.js  # PostCSS setup
 
 ## Supabase Setup
 
-1. Create a Supabase project.
-2. Open the SQL editor and run `docs/supabase-setup.sql`.
-3. Copy `.env.local.example` to `.env.local` and fill in your project URL and anon/publishable key:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-4. Seed the initial board row:
-   ```bash
-   pnpm db:seed
-   ```
-5. Run the app locally with `pnpm dev`. The board loads from Supabase when the environment variables are present and falls back to `localStorage` if they are missing.
+Use local Supabase for development and the hosted Supabase project for production. The schema is tracked in `supabase/migrations/`, and mock dev boards live in `supabase/seed.sql`, so local testing cannot mutate production rows.
 
-For GitHub Pages, add these as repository secrets or environment variables during the build if you want the deployed static bundle to point at Supabase:
+1. Install and start Docker Desktop.
+2. Start the local Supabase stack:
+   ```bash
+   pnpm supabase:start
+   ```
+3. Generate the local development env file from the running stack:
+   ```bash
+   pnpm supabase:env
+   ```
+4. Reset/seed the local database with mock project boards:
+   ```bash
+   pnpm db:seed:dev
+   ```
+5. Run the app locally with `pnpm dev`. Next.js reads `.env.development.local`, so the local app points at the Docker-backed Supabase stack.
+
+For production, run `docs/supabase-setup.sql` in the hosted Supabase project or apply the matching migration there, then configure GitHub Pages with production secrets:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SUPABASE_BOARD_ID` (optional; defaults to `default`)
 
-The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
+Avoid putting production Supabase values in `.env.development.local`. Also avoid using `.env.local` for production credentials on your development machine; treat it as a personal local override because Next.js can load it for local commands. The SQL file uses permissive anonymous policies so this starter works without authentication. For a real multi-user board, add Supabase Auth and restrict rows by user.
 
 Each project board is stored as a separate row in `public.boards`, and the board switcher loads the selected row by ID.
 

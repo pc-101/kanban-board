@@ -1,6 +1,3 @@
--- Production/manual setup fallback.
--- Local development uses supabase/migrations/20260723000000_create_boards.sql.
-
 create table if not exists public.boards (
   id text primary key,
   data jsonb not null,
