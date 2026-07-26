@@ -51,7 +51,7 @@ export default function BoardTitle() {
 
   if (isEditing) {
     return (
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <div className="flex h-10 min-w-0 items-center gap-2 overflow-hidden">
         <input
           value={draftTitle}
           onChange={(event) => setDraftTitle(event.target.value)}
@@ -61,19 +61,19 @@ export default function BoardTitle() {
           }}
           autoFocus
           aria-label="Rename board"
-          className="min-w-0 max-w-full rounded-md border bg-transparent px-2 py-1 text-2xl font-semibold outline-none focus:border-sky-400 dark:border-slate-700"
+          className="h-10 min-w-0 max-w-full rounded-md border bg-transparent px-2 text-2xl font-semibold outline-none focus:border-sky-400 dark:border-slate-700"
         />
         <button
           type="button"
           onClick={saveTitle}
-          className="rounded-md border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 dark:border-emerald-500 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
+          className="h-8 rounded-md border border-emerald-600 bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 dark:border-emerald-500 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
         >
           Save
         </button>
         <button
           type="button"
           onClick={cancelEdit}
-          className="rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950"
+          className="h-8 rounded-md border border-rose-300 bg-rose-50 px-3 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950"
         >
           Cancel
         </button>
@@ -82,7 +82,7 @@ export default function BoardTitle() {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
+    <div className="flex h-10 min-w-0 items-center gap-2">
       <h1 className="truncate text-2xl font-semibold">{boardTitle}</h1>
       <button
         type="button"
