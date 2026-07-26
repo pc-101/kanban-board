@@ -5,7 +5,18 @@ import { useBoard } from "@/lib/board-store";
 import AssigneeManager from "./assignee-manager";
 import BoardColorPicker from "./board-color-picker";
 import BoardSwitcher from "./board-switcher";
+import BoardTitle from "./board-title";
 import ColumnView from "./column";
+
+const alpha = (color: string, opacity: string) => color.startsWith("#") && color.length === 7 ? `${color}${opacity}` : color;
+
+function DragHintIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+      <path d="M10 3v14M3 10h14M6.5 6.5 3 10l3.5 3.5M13.5 6.5 17 10l-3.5 3.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+    </svg>
+  );
+}
 
 export default function Board() {
   const columns = useBoard((state) => state.columns);
@@ -29,15 +40,11 @@ export default function Board() {
     return () => window.clearInterval(interval);
   }, [hydrate, syncFromRemote]);
 
-  const { accent, subtleAccent } = useMemo(() => {
-    if (boardColor.startsWith("#") && boardColor.length === 7) {
-      return {
-        accent: boardColor,
-        subtleAccent: `${boardColor}33`,
-      };
-    }
-    return { accent: boardColor, subtleAccent: boardColor };
-  }, [boardColor]);
+  const { accent, subtleAccent, washAccent } = useMemo(() => ({
+    accent: boardColor,
+    subtleAccent: alpha(boardColor, "33"),
+    washAccent: alpha(boardColor, "10"),
+  }), [boardColor]);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -49,23 +56,32 @@ export default function Board() {
   };
 
   return (
-    <>
-      <div className="mb-3 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <BoardSwitcher />
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+    <section
+      className="rounded-xl border bg-white/95 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/95"
+      style={{
+        backgroundImage: `radial-gradient(circle at 50% 0%, ${washAccent}, transparent 42%)`,
+      }}
+    >
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <BoardTitle />
+          <div className="min-h-5 text-xs text-slate-500 dark:text-slate-400">
             {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
             {!syncError && isLoading ? <span>Loading board...</span> : null}
             {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
           </div>
         </div>
+
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <BoardColorPicker />
+          <BoardSwitcher />
           <AssigneeManager />
         </div>
+
+        <BoardColorPicker />
       </div>
+
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-5 overflow-x-auto pb-4">
           {columns.map((col) => (
             <Droppable droppableId={col.id} key={col.id}>
               {(provided, snapshot) => {
@@ -74,9 +90,10 @@ export default function Board() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className="w-80 shrink-0 rounded-xl border-2 bg-white p-3 transition-shadow dark:border-slate-800 dark:bg-slate-900"
+                    className="w-80 shrink-0 rounded-xl border bg-white/80 p-4 shadow-sm transition-shadow dark:bg-slate-900/70"
                     style={{
                       borderColor: isActive ? accent : subtleAccent,
+                      boxShadow: isActive ? `0 16px 40px ${alpha(boardColor, "22")}` : undefined,
                     }}
                   >
                     <ColumnView column={col} />
@@ -88,6 +105,11 @@ export default function Board() {
           ))}
         </div>
       </DragDropContext>
-    </>
+
+      <p className="mt-1 inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <DragHintIcon />
+        Drag tasks between columns. Titles and tasks persist in your browser.
+      </p>
+    </section>
   );
 }

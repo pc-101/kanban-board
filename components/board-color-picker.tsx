@@ -16,7 +16,7 @@ export default function BoardColorPicker() {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="hidden text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline">Color</span>
+      <span className="hidden text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:inline">Board Accent</span>
       <div className="flex items-center gap-1">
         {PALETTE.map((swatch) => {
           const isActive = swatch.value.toLowerCase() === boardColor.toLowerCase();
