@@ -44,24 +44,40 @@ export default function BoardTitle() {
     setIsEditing(false);
   };
 
+  const cancelEdit = () => {
+    setDraftTitle(boardTitle);
+    setIsEditing(false);
+  };
+
   if (isEditing) {
     return (
-      <input
-        value={draftTitle}
-        onChange={(event) => setDraftTitle(event.target.value)}
-        onBlur={saveTitle}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-          if (event.key === "Escape") {
-            setDraftTitle(boardTitle);
-            setIsEditing(false);
-            event.currentTarget.blur();
-          }
-        }}
-        autoFocus
-        aria-label="Rename board"
-        className="min-w-0 max-w-full rounded-md border bg-transparent px-2 py-1 text-2xl font-semibold outline-none focus:border-sky-400 dark:border-slate-700"
-      />
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <input
+          value={draftTitle}
+          onChange={(event) => setDraftTitle(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") saveTitle();
+            if (event.key === "Escape") cancelEdit();
+          }}
+          autoFocus
+          aria-label="Rename board"
+          className="min-w-0 max-w-full rounded-md border bg-transparent px-2 py-1 text-2xl font-semibold outline-none focus:border-sky-400 dark:border-slate-700"
+        />
+        <button
+          type="button"
+          onClick={saveTitle}
+          className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:border-slate-700 dark:hover:bg-white/5"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={cancelEdit}
+          className="rounded-md border px-3 py-1.5 text-sm text-slate-600 hover:bg-black/5 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-white/5"
+        >
+          Cancel
+        </button>
+      </div>
     );
   }
 
