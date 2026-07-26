@@ -5,8 +5,9 @@ export const ASSIGNEE_COLOR_OPTIONS = [
   "#60a5fa",
   "#10b981",
   "#8b5cf6",
-  "#64748b",
 ];
+
+export const UNASSIGNED_COLOR = "#94a3b8";
 
 export const colorForAssignee = (name: string, colors: Record<string, string> = {}) => {
   const saved = colors[name];

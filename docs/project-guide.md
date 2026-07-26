@@ -14,7 +14,7 @@ Core capabilities:
 - editable columns
 - task detail modal
 - shared assignee list with color-coded pills, search, add, color customization, and manage flows
-- explicit unassigned task labels
+- explicit unassigned task labels with a reserved neutral color
 - completed timestamps for tasks moved to Done
 - bulk clearing for Done tasks
 - board accent colors
@@ -100,7 +100,7 @@ columns
 tasks
 ```
 
-Task records can include title, assignee, description, due date, and completed timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
+Task records can include title, assignee, description, due date, and completed timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. The unassigned state uses a reserved neutral color that is intentionally excluded from the selectable assignee palette. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
 
 This keeps the schema intentionally simple for a starter app. A larger production app would likely normalize boards, columns, tasks, assignees, users, and memberships into separate tables.
 

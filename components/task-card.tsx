@@ -1,6 +1,6 @@
 "use client";
 import { KeyboardEvent, useMemo, useState } from "react";
-import { colorForAssignee } from "@/lib/assignee-colors";
+import { colorForAssignee, UNASSIGNED_COLOR } from "@/lib/assignee-colors";
 import { useBoard, Task } from "@/lib/board-store";
 import TaskDetailModal from "./task-detail-modal";
 import { XIcon } from "./ui-icons";
@@ -48,7 +48,7 @@ export default function TaskCard({ task, columnId }: { task: Task; columnId: str
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400" aria-hidden="true" />
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: UNASSIGNED_COLOR }} aria-hidden="true" />
                   Unassigned
                 </span>
               )}

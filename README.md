@@ -10,7 +10,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Rename boards when a project needs to be repurposed.
 - Click tasks to edit title, assignee, description, and due date.
 - Create and customize color-coded shared assignees from a compact toolbar dropdown and assign them to tasks.
-- Show unassigned tasks explicitly.
+- Show unassigned tasks explicitly with a reserved neutral color.
 - Mark tasks with a completed timestamp when moved into Done.
 - Clear all Done tasks when completed work should be removed from the board.
 - Customize board accent colors.
