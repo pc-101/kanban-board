@@ -7,8 +7,12 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Create and switch between multiple project boards.
 - Drag tasks across columns with `@hello-pangea/dnd`.
 - Add, delete, and reorder tasks.
+- Rename boards when a project needs to be repurposed.
 - Click tasks to edit title, assignee, description, and due date.
 - Create shared assignees and assign them to tasks.
+- Show unassigned tasks explicitly.
+- Mark tasks with a completed timestamp when moved into Done.
+- Clear all Done tasks when completed work should be removed from the board.
 - Customize board accent colors.
 - Sync to Supabase when configured, with `localStorage` as fallback/cache.
 - Poll Supabase every 10 seconds for newer remote board updates.

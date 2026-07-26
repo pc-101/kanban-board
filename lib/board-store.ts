@@ -17,6 +17,7 @@ export type Task = {
   assignee?: string;
   description?: string;
   dueDate?: string;
+  completedAt?: string;
 };
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
@@ -33,11 +34,13 @@ export type BoardState = {
   syncError?: string;
   addTask: (columnId: string, title: string) => void;
   moveTask: (taskId: string, fromColId: string, toColId: string, toIndex: number) => void;
+  renameBoard: (title: string) => void;
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
   addAssignee: (name: string) => void;
   removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
+  clearColumnTasks: (columnId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   createBoard: (title: string) => Promise<void>;
   switchBoard: (boardId: string) => Promise<void>;
@@ -52,6 +55,8 @@ const LEGACY_STORAGE_KEY = "kanban-board:v1";
 const ACTIVE_BOARD_KEY = `${STORAGE_PREFIX}:active`;
 const DEFAULT_BOARD_COLOR = "#0ea5e9";
 const DEFAULT_BOARD_TITLE = "Kanban Board";
+
+const isDoneColumn = (column: Column) => column.title.trim().toLowerCase() === "done";
 
 const createStarterSnapshot = (boardTitle = DEFAULT_BOARD_TITLE): BoardSnapshot => {
   const todoId = nanoid(6);
@@ -341,6 +346,24 @@ export const useBoard = create<BoardState>((set, get) => ({
     });
     void get().persist();
   },
+  clearColumnTasks: (columnId) => {
+    set((s) => {
+      const column = s.columns.find((col) => col.id === columnId);
+      if (!column || column.taskIds.length === 0) return s;
+
+      const taskIds = new Set(column.taskIds);
+      const tasks = Object.fromEntries(
+        Object.entries(s.tasks).filter(([id]) => !taskIds.has(id)),
+      );
+
+      return {
+        ...s,
+        columns: s.columns.map((col) => col.id === columnId ? { ...col, taskIds: [] } : col),
+        tasks,
+      };
+    });
+    void get().persist();
+  },
   updateTask: (taskId, updates) => {
     set((s) => {
       const task = s.tasks[taskId];
@@ -353,6 +376,21 @@ export const useBoard = create<BoardState>((set, get) => ({
         },
       };
     });
+    void get().persist();
+  },
+  renameBoard: (title) => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+
+    set((s) => ({
+      ...s,
+      boardTitle: trimmed,
+      boards: mergeBoards(s.boards, {
+        id: s.activeBoardId,
+        title: trimmed,
+        updatedAt: s.lastRemoteUpdatedAt ?? null,
+      }),
+    }));
     void get().persist();
   },
   renameColumn: (columnId, title) => {
@@ -400,10 +438,22 @@ export const useBoard = create<BoardState>((set, get) => ({
     set((s) => {
       const from = s.columns.find(c => c.id === fromColId)!;
       const to = s.columns.find(c => c.id === toColId)!;
+      const wasDone = isDoneColumn(from);
+      const isNowDone = isDoneColumn(to);
+
       from.taskIds = from.taskIds.filter(id => id !== taskId);
       const next = [...to.taskIds];
       next.splice(toIndex, 0, taskId);
       to.taskIds = next;
+
+      const task = s.tasks[taskId];
+      if (task && !wasDone && isNowDone) {
+        s.tasks[taskId] = { ...task, completedAt: new Date().toISOString() };
+      }
+      if (task && wasDone && !isNowDone) {
+        s.tasks[taskId] = { ...task, completedAt: undefined };
+      }
+
       return { ...s };
     });
     void get().persist();

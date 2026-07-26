@@ -1,11 +1,18 @@
 "use client";
-import { KeyboardEvent, useState } from "react";
+import { KeyboardEvent, useMemo, useState } from "react";
 import { useBoard, Task } from "@/lib/board-store";
 import TaskDetailModal from "./task-detail-modal";
 
 export default function TaskCard({ task, columnId }: { task: Task; columnId: string }) {
   const removeTask = useBoard((state) => state.removeTask);
   const [isOpen, setIsOpen] = useState(false);
+  const completedLabel = useMemo(() => {
+    if (!task.completedAt) return null;
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(task.completedAt));
+  }, [task.completedAt]);
 
   const openFromKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -27,8 +34,9 @@ export default function TaskCard({ task, columnId }: { task: Task; columnId: str
           <div className="min-w-0 space-y-2">
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{task.title}</p>
             <div className="flex flex-wrap gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              {task.assignee ? <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{task.assignee}</span> : null}
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{task.assignee || "Unassigned"}</span>
               {task.dueDate ? <span className="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-800">Due {task.dueDate}</span> : null}
+              {completedLabel ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">Completed {completedLabel}</span> : null}
             </div>
           </div>
           <button

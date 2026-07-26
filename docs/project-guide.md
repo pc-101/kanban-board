@@ -9,10 +9,14 @@ The app is a static-exportable Next.js 14 Kanban board. The browser owns the use
 Core capabilities:
 
 - multiple project boards
+- board renaming
 - drag-and-drop tasks
 - editable columns
 - task detail modal
 - shared assignee list
+- explicit unassigned task labels
+- completed timestamps for tasks moved to Done
+- bulk clearing for Done tasks
 - board accent colors
 - local cache/fallback through `localStorage`
 - Supabase persistence and polling sync
@@ -93,6 +97,8 @@ assignees
 columns
 tasks
 ```
+
+Task records can include title, assignee, description, due date, and completed timestamp fields. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
 
 This keeps the schema intentionally simple for a starter app. A larger production app would likely normalize boards, columns, tasks, assignees, users, and memberships into separate tables.
 

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Task, useBoard } from "@/lib/board-store";
 
@@ -24,6 +24,13 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
   const assigneeOptions = task.assignee && !assignees.includes(task.assignee)
     ? [...assignees, task.assignee]
     : assignees;
+  const completedLabel = useMemo(() => {
+    if (!task.completedAt) return null;
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(task.completedAt));
+  }, [task.completedAt]);
 
   useEffect(() => {
     setMounted(true);
@@ -111,6 +118,12 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               />
             </label>
           </div>
+
+          {completedLabel ? (
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+              Completed on {completedLabel}
+            </div>
+          ) : null}
 
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Description</span>

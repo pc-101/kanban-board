@@ -5,8 +5,9 @@ import { useBoard, Column } from "@/lib/board-store";
 import TaskCard from "./task-card";
 
 export default function ColumnView({ column }: { column: Column }) {
-  const { tasks, addTask, renameColumn } = useBoard();
+  const { tasks, addTask, renameColumn, clearColumnTasks } = useBoard();
   const [value, setValue] = useState("");
+  const isDoneColumn = column.title.trim().toLowerCase() === "done";
 
   return (
     <div className="space-y-3">
@@ -16,7 +17,18 @@ export default function ColumnView({ column }: { column: Column }) {
           value={column.title}
           onChange={(e) => renameColumn(column.id, e.target.value)}
         />
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">{column.taskIds.length}</span>
+        <div className="flex items-center gap-2">
+          {isDoneColumn && column.taskIds.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => clearColumnTasks(column.id)}
+              className="rounded-md border px-2 py-0.5 text-xs text-slate-500 hover:bg-black/5 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-white/5"
+            >
+              Clear all
+            </button>
+          ) : null}
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">{column.taskIds.length}</span>
+        </div>
       </div>
 
       <div className="space-y-2">
