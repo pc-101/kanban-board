@@ -1,35 +1,19 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useBoard } from "@/lib/board-store";
 
 export default function BoardSwitcher() {
   const activeBoardId = useBoard((state) => state.activeBoardId);
-  const boardTitle = useBoard((state) => state.boardTitle);
   const boards = useBoard((state) => state.boards);
   const createBoard = useBoard((state) => state.createBoard);
   const switchBoard = useBoard((state) => state.switchBoard);
-  const renameBoard = useBoard((state) => state.renameBoard);
   const [title, setTitle] = useState("");
-  const [boardName, setBoardName] = useState(boardTitle);
-
-  useEffect(() => {
-    setBoardName(boardTitle);
-  }, [boardTitle]);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!title.trim()) return;
     void createBoard(title);
     setTitle("");
-  };
-
-  const saveBoardName = () => {
-    const trimmed = boardName.trim();
-    if (!trimmed) {
-      setBoardName(boardTitle);
-      return;
-    }
-    if (trimmed !== boardTitle) renameBoard(trimmed);
   };
 
   return (
@@ -62,24 +46,6 @@ export default function BoardSwitcher() {
           Create
         </button>
       </form>
-
-      <label className="flex items-center gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Name</span>
-        <input
-          value={boardName}
-          onChange={(event) => setBoardName(event.target.value)}
-          onBlur={saveBoardName}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-            if (event.key === "Escape") {
-              setBoardName(boardTitle);
-              event.currentTarget.blur();
-            }
-          }}
-          aria-label="Rename board"
-          className="w-48 rounded-md border bg-transparent px-2 py-1.5 text-sm font-medium outline-none focus:border-sky-400 dark:border-slate-700"
-        />
-      </label>
     </div>
   );
 }
