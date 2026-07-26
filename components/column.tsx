@@ -1,10 +1,22 @@
 "use client";
-import { Draggable } from "@hello-pangea/dnd";
-import { useMemo, useState } from "react";
+import { Draggable, DraggableProvidedDraggableProps, DraggableStateSnapshot } from "@hello-pangea/dnd";
+import { ReactNode, useMemo, useState } from "react";
 import { useBoard, Column } from "@/lib/board-store";
 import TaskCard from "./task-card";
 
 const alpha = (color: string, opacity: string) => color.startsWith("#") && color.length === 7 ? `${color}${opacity}` : color;
+
+const getDraggableStyle = (
+  style: DraggableProvidedDraggableProps["style"],
+  snapshot: DraggableStateSnapshot,
+) => {
+  if (!snapshot.isDropAnimating) return style;
+
+  return {
+    ...style,
+    transitionDuration: "0.001s",
+  };
+};
 
 function AddIcon() {
   return (
@@ -50,7 +62,15 @@ function ProgressIcon({ color }: { color: string }) {
   );
 }
 
-export default function ColumnView({ column }: { column: Column }) {
+export default function ColumnView({
+  column,
+  isDraggingOver,
+  placeholder,
+}: {
+  column: Column;
+  isDraggingOver: boolean;
+  placeholder: ReactNode;
+}) {
   const { tasks, addTask, renameColumn, clearColumnTasks, boardColor } = useBoard();
   const [value, setValue] = useState("");
   const normalizedTitle = column.title.trim().toLowerCase();
@@ -63,6 +83,8 @@ export default function ColumnView({ column }: { column: Column }) {
     countText: boardColor,
     inputBorder: alpha(boardColor, "2E"),
     addBg: alpha(boardColor, "0D"),
+    previewBg: alpha(boardColor, "0A"),
+    previewBorder: alpha(boardColor, "66"),
   }), [boardColor]);
 
   return (
@@ -98,16 +120,32 @@ export default function ColumnView({ column }: { column: Column }) {
         ) : null}
       </div>
 
-      <div className="space-y-2">
+      <div className="relative space-y-2">
         {column.taskIds.map((id, idx) => (
           <Draggable draggableId={id} index={idx} key={id}>
-            {(provided) => (
-              <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+                style={getDraggableStyle(provided.draggableProps.style, snapshot)}
+              >
                 <TaskCard task={tasks[id]} columnId={column.id} />
               </div>
             )}
           </Draggable>
         ))}
+        {column.taskIds.length === 0 && isDraggingOver ? (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-lg border-2 border-dashed"
+            style={{
+              backgroundColor: styles.previewBg,
+              borderColor: styles.previewBorder,
+            }}
+            aria-hidden="true"
+          />
+        ) : null}
+        {placeholder}
       </div>
 
       <form

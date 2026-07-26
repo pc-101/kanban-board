@@ -18,14 +18,25 @@ function DragHintIcon() {
   );
 }
 
+function SyncStatus() {
+  const isLoading = useBoard((state) => state.isLoading);
+  const isSyncing = useBoard((state) => state.isSyncing);
+  const syncError = useBoard((state) => state.syncError);
+
+  return (
+    <div className="min-h-5 text-xs text-slate-500 dark:text-slate-400">
+      {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
+      {!syncError && isLoading ? <span>Loading board...</span> : null}
+      {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
+    </div>
+  );
+}
+
 export default function Board() {
   const columns = useBoard((state) => state.columns);
   const hydrate = useBoard((state) => state.hydrate);
   const syncFromRemote = useBoard((state) => state.syncFromRemote);
   const boardColor = useBoard((state) => state.boardColor);
-  const isLoading = useBoard((state) => state.isLoading);
-  const isSyncing = useBoard((state) => state.isSyncing);
-  const syncError = useBoard((state) => state.syncError);
 
   useEffect(() => {
     void hydrate();
@@ -65,11 +76,7 @@ export default function Board() {
       <div className="mb-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <BoardTitle />
-          <div className="min-h-5 text-xs text-slate-500 dark:text-slate-400">
-            {syncError ? <span className="text-rose-500">Sync error: {syncError}</span> : null}
-            {!syncError && isLoading ? <span>Loading board...</span> : null}
-            {!syncError && !isLoading && isSyncing ? <span>Saving...</span> : null}
-          </div>
+          <SyncStatus />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -96,8 +103,7 @@ export default function Board() {
                       boxShadow: isActive ? `0 16px 40px ${alpha(boardColor, "22")}` : undefined,
                     }}
                   >
-                    <ColumnView column={col} />
-                    {provided.placeholder}
+                    <ColumnView column={col} isDraggingOver={isActive} placeholder={provided.placeholder} />
                   </div>
                 );
               }}

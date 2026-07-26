@@ -61,6 +61,9 @@ const LEGACY_STORAGE_KEY = "kanban-board:v1";
 const ACTIVE_BOARD_KEY = `${STORAGE_PREFIX}:active`;
 const DEFAULT_BOARD_COLOR = "#0ea5e9";
 const DEFAULT_BOARD_TITLE = "Kanban Board";
+const DROP_SAVE_DELAY_MS = 250;
+
+let dropSaveTimer: ReturnType<typeof setTimeout> | undefined;
 
 const isDoneColumn = (column: Column) => column.title.trim().toLowerCase() === "done";
 
@@ -544,27 +547,51 @@ export const useBoard = create<BoardState>((set, get) => ({
   },
   moveTask: (taskId, fromColId, toColId, toIndex) => {
     set((s) => {
-      const from = s.columns.find(c => c.id === fromColId)!;
-      const to = s.columns.find(c => c.id === toColId)!;
+      const from = s.columns.find(c => c.id === fromColId);
+      const to = s.columns.find(c => c.id === toColId);
+      if (!from || !to) return s;
+
       const wasDone = isDoneColumn(from);
       const isNowDone = isDoneColumn(to);
+      const nextColumns = s.columns.map((column) => {
+        if (column.id === fromColId && column.id === toColId) {
+          const taskIds = [...column.taskIds];
+          const currentIndex = taskIds.indexOf(taskId);
+          if (currentIndex === -1) return column;
+          taskIds.splice(currentIndex, 1);
+          taskIds.splice(toIndex, 0, taskId);
+          return { ...column, taskIds };
+        }
 
-      from.taskIds = from.taskIds.filter(id => id !== taskId);
-      const next = [...to.taskIds];
-      next.splice(toIndex, 0, taskId);
-      to.taskIds = next;
+        if (column.id === fromColId) {
+          return { ...column, taskIds: column.taskIds.filter(id => id !== taskId) };
+        }
+
+        if (column.id === toColId) {
+          const taskIds = [...column.taskIds];
+          taskIds.splice(toIndex, 0, taskId);
+          return { ...column, taskIds };
+        }
+
+        return column;
+      });
 
       const task = s.tasks[taskId];
+      let nextTasks = s.tasks;
       if (task && !wasDone && isNowDone) {
-        s.tasks[taskId] = { ...task, completedAt: new Date().toISOString() };
+        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: new Date().toISOString() } };
       }
       if (task && wasDone && !isNowDone) {
-        s.tasks[taskId] = { ...task, completedAt: undefined };
+        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: undefined } };
       }
 
-      return { ...s };
+      return { ...s, columns: nextColumns, tasks: nextTasks };
     });
-    void get().persist();
+
+    if (dropSaveTimer) clearTimeout(dropSaveTimer);
+    dropSaveTimer = setTimeout(() => {
+      void get().persist();
+    }, DROP_SAVE_DELAY_MS);
   },
   setBoardColor: (color) => {
     set(() => ({ boardColor: color }));
