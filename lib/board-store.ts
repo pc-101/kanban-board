@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { nanoid } from "nanoid";
+import { colorForAssignee } from "./assignee-colors";
 import {
   DEFAULT_BOARD_ID,
   listBoardsFromSupabase,
@@ -25,6 +26,7 @@ export type BoardState = {
   boardTitle: string;
   boardColor: string;
   assignees: string[];
+  assigneeColors: Record<string, string>;
   boards: BoardMeta[];
   columns: Column[];
   tasks: Record<string, Task>;
@@ -37,7 +39,7 @@ export type BoardState = {
   renameBoard: (title: string) => void;
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
-  addAssignee: (name: string) => void;
+  addAssignee: (name: string, color?: string) => void;
   removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
   clearColumnTasks: (columnId: string) => void;
@@ -69,6 +71,11 @@ const createStarterSnapshot = (boardTitle = DEFAULT_BOARD_TITLE): BoardSnapshot 
     boardTitle,
     boardColor: DEFAULT_BOARD_COLOR,
     assignees: ["Pat", "Sam", "Alex"],
+    assigneeColors: {
+      Pat: "#3b82f6",
+      Sam: "#fb7185",
+      Alex: "#8b5cf6",
+    },
     columns: [
       { id: todoId, title: "Todo", taskIds: [t1, t2] },
       { id: doingId, title: "In Progress", taskIds: [t3] },
@@ -108,6 +115,7 @@ const createEmptyBoardSnapshot = (boardTitle: string): BoardSnapshot => ({
   boardTitle,
   boardColor: DEFAULT_BOARD_COLOR,
   assignees: [],
+  assigneeColors: {},
   columns: [
     { id: nanoid(6), title: "Todo", taskIds: [] },
     { id: nanoid(6), title: "In Progress", taskIds: [] },
@@ -139,12 +147,18 @@ const normalizeSnapshot = (snapshot: Partial<BoardSnapshot>, fallback: BoardStat
     ? uniqueNames(snapshot.assignees)
     : uniqueNames(Object.values(tasks).map((task) => task.assignee));
 
+  const sourceColors = snapshot.assigneeColors ?? fallback.assigneeColors ?? {};
+  const assigneeColors = Object.fromEntries(
+    assignees.map((assignee) => [assignee, sourceColors[assignee] ?? colorForAssignee(assignee)]),
+  );
+
   return {
     boardTitle: snapshot.boardTitle ?? fallback.boardTitle ?? DEFAULT_BOARD_TITLE,
     columns: snapshot.columns ?? fallback.columns,
     tasks,
     boardColor: snapshot.boardColor ?? fallback.boardColor ?? DEFAULT_BOARD_COLOR,
     assignees,
+    assigneeColors,
   };
 };
 
@@ -154,6 +168,7 @@ const snapshotFromState = (state: BoardState): BoardSnapshot => ({
   tasks: state.tasks,
   boardColor: state.boardColor,
   assignees: state.assignees,
+  assigneeColors: state.assigneeColors,
 });
 
 const boardStorageKey = (boardId: string) => `${STORAGE_PREFIX}:board:${boardId}`;
@@ -312,6 +327,7 @@ export const useBoard = create<BoardState>((set, get) => ({
         Object.entries(current.tasks).map(([id, task]) => [id, { ...task }]),
       ),
       assignees: [...current.assignees],
+      assigneeColors: { ...current.assigneeColors },
     };
     const boardMeta = { id: boardId, title: trimmed, updatedAt: null };
 
@@ -438,14 +454,21 @@ export const useBoard = create<BoardState>((set, get) => ({
     set((s) => ({ ...s, columns: [...s.columns, { id, title, taskIds: [] }] }));
     void get().persist();
   },
-  addAssignee: (name) => {
+  addAssignee: (name, color) => {
     const trimmed = name.trim();
     if (!trimmed) return;
 
     set((s) => {
       const exists = s.assignees.some((assignee) => assignee.toLowerCase() === trimmed.toLowerCase());
       if (exists) return s;
-      return { ...s, assignees: [...s.assignees, trimmed] };
+      return {
+        ...s,
+        assignees: [...s.assignees, trimmed],
+        assigneeColors: {
+          ...s.assigneeColors,
+          [trimmed]: color ?? colorForAssignee(trimmed, s.assigneeColors),
+        },
+      };
     });
     void get().persist();
   },
@@ -458,9 +481,12 @@ export const useBoard = create<BoardState>((set, get) => ({
         ]),
       );
 
+      const { [name]: _removed, ...assigneeColors } = s.assigneeColors;
+
       return {
         ...s,
         assignees: s.assignees.filter((assignee) => assignee !== name),
+        assigneeColors,
         tasks,
       };
     });

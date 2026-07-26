@@ -13,7 +13,7 @@ Core capabilities:
 - drag-and-drop tasks
 - editable columns
 - task detail modal
-- shared assignee list
+- shared assignee list with color-coded pills, search, add, and manage flows
 - explicit unassigned task labels
 - completed timestamps for tasks moved to Done
 - bulk clearing for Done tasks
@@ -95,11 +95,12 @@ The `data` JSON contains the current board snapshot:
 boardTitle
 boardColor
 assignees
+assigneeColors
 columns
 tasks
 ```
 
-Task records can include title, assignee, description, due date, and completed timestamp fields. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
+Task records can include title, assignee, description, due date, and completed timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
 
 This keeps the schema intentionally simple for a starter app. A larger production app would likely normalize boards, columns, tasks, assignees, users, and memberships into separate tables.
 

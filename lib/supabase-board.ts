@@ -5,6 +5,7 @@ export type BoardSnapshot = {
   boardTitle: string;
   boardColor: string;
   assignees: string[];
+  assigneeColors: Record<string, string>;
   columns: Column[];
   tasks: Record<string, Task>;
 };
