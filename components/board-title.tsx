@@ -66,14 +66,14 @@ export default function BoardTitle() {
         <button
           type="button"
           onClick={saveTitle}
-          className="rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:border-slate-700 dark:hover:bg-white/5"
+          className="rounded-md border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 dark:border-emerald-500 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
         >
           Save
         </button>
         <button
           type="button"
           onClick={cancelEdit}
-          className="rounded-md border px-3 py-1.5 text-sm text-slate-600 hover:bg-black/5 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-white/5"
+          className="rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950"
         >
           Cancel
         </button>
