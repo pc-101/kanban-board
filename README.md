@@ -4,7 +4,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 
 ## Features
 
-- Create, duplicate, and switch between multiple project boards.
+- Create, duplicate, delete, and switch between multiple project boards.
 - Drag tasks across columns with `@hello-pangea/dnd`.
 - Add, delete, and reorder tasks.
 - Rename boards when a project needs to be repurposed.

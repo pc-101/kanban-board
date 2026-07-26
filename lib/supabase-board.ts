@@ -79,3 +79,15 @@ export async function saveBoardToSupabase(boardId: string, snapshot: BoardSnapsh
 
   return { data: data ? { updatedAt: data.updated_at } : null, error };
 }
+
+export async function deleteBoardFromSupabase(boardId: string) {
+  const supabase = getSupabase();
+  if (!supabase) return { error: null };
+
+  const { error } = await supabase
+    .from("boards")
+    .delete()
+    .eq("id", boardId);
+
+  return { error };
+}

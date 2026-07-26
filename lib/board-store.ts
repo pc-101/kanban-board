@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { colorForAssignee } from "./assignee-colors";
 import {
   DEFAULT_BOARD_ID,
+  deleteBoardFromSupabase,
   listBoardsFromSupabase,
   loadBoardFromSupabase,
   saveBoardToSupabase,
@@ -46,6 +47,7 @@ export type BoardState = {
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   createBoard: (title: string) => Promise<void>;
   duplicateBoard: (title: string) => Promise<void>;
+  deleteBoard: (boardId: string) => Promise<void>;
   switchBoard: (boardId: string) => Promise<void>;
   hydrate: () => Promise<void>;
   persist: () => Promise<void>;
@@ -187,6 +189,11 @@ const writeLocalSnapshot = (boardId: string, snapshot: BoardSnapshot) => {
   if (typeof window === "undefined") return;
   localStorage.setItem(boardStorageKey(boardId), JSON.stringify(snapshot));
   localStorage.setItem(ACTIVE_BOARD_KEY, boardId);
+};
+
+const removeLocalSnapshot = (boardId: string) => {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(boardStorageKey(boardId));
 };
 
 const remoteIsNewer = (remoteUpdatedAt?: string | null, currentUpdatedAt?: string) => {
@@ -341,6 +348,35 @@ export const useBoard = create<BoardState>((set, get) => ({
     }));
     writeLocalSnapshot(boardId, snapshot);
     await get().persist();
+  },
+  deleteBoard: async (boardId) => {
+    const current = get();
+    if (current.boards.length <= 1) return;
+
+    const remainingBoards = current.boards.filter((board) => board.id !== boardId);
+    const nextBoardId = current.activeBoardId === boardId
+      ? remainingBoards[0]?.id
+      : current.activeBoardId;
+
+    if (!nextBoardId) return;
+
+    removeLocalSnapshot(boardId);
+    const { error } = await deleteBoardFromSupabase(boardId);
+
+    set((state) => ({
+      ...state,
+      boards: remainingBoards,
+      syncError: error?.message,
+    }));
+
+    if (current.activeBoardId === boardId) {
+      await get().switchBoard(nextBoardId);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ACTIVE_BOARD_KEY, nextBoardId);
+    }
   },
   syncFromRemote: async () => {
     const state = get();

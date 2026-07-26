@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useBoard } from "@/lib/board-store";
 import { ChevronDownIcon } from "./ui-icons";
 
-type BoardAction = "create" | "duplicate";
+type BoardAction = "create" | "duplicate" | "delete";
 
 function DotsIcon() {
   return (
@@ -21,6 +21,7 @@ export default function BoardSwitcher() {
   const boards = useBoard((state) => state.boards);
   const createBoard = useBoard((state) => state.createBoard);
   const duplicateBoard = useBoard((state) => state.duplicateBoard);
+  const deleteBoard = useBoard((state) => state.deleteBoard);
   const switchBoard = useBoard((state) => state.switchBoard);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<BoardAction | null>(null);
@@ -52,8 +53,15 @@ export default function BoardSwitcher() {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!title.trim() || !activeAction) return;
+    if (!activeAction) return;
 
+    if (activeAction === "delete") {
+      await deleteBoard(activeBoardId);
+      closeMenu();
+      return;
+    }
+
+    if (!title.trim()) return;
     if (activeAction === "create") await createBoard(title);
     if (activeAction === "duplicate") await duplicateBoard(title);
     closeMenu();
@@ -110,7 +118,39 @@ export default function BoardSwitcher() {
                 >
                   Duplicate current board
                 </button>
+                <button
+                  type="button"
+                  onClick={() => openAction("delete")}
+                  disabled={boards.length <= 1}
+                  className="rounded-md px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                >
+                  Delete current board
+                </button>
               </div>
+            ) : activeAction === "delete" ? (
+              <form onSubmit={onSubmit} className="space-y-5 p-3">
+                <div className="space-y-2">
+                  <p className="text-base font-semibold text-slate-900 dark:text-slate-100">Delete this board?</p>
+                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    This removes {boardTitle} from the app and database.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveAction(null)}
+                    className="rounded-md border px-4 py-2 text-sm text-slate-600 hover:bg-black/5 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-white/5"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-md border border-rose-600 bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 dark:border-rose-500 dark:bg-rose-500 dark:text-slate-950 dark:hover:bg-rose-400"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </form>
             ) : (
               <form onSubmit={onSubmit} className="space-y-2">
                 <label className="block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
