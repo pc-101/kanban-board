@@ -3,20 +3,13 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ASSIGNEE_COLOR_OPTIONS, colorForAssignee, initialsForAssignee } from "@/lib/assignee-colors";
 import { useBoard } from "@/lib/board-store";
+import { ChevronDownIcon, XIcon } from "./ui-icons";
 
 function UsersIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
       <path d="M7.5 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3 17a4.5 4.5 0 0 1 9 0" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
       <path d="M13 9.5a2.5 2.5 0 1 0 0-5M13.5 12.5A4 4 0 0 1 17 16.5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-      <path d="m6 8 4 4 4-4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -55,10 +48,10 @@ function AssigneePill({ name, color, onRemove }: { name: string; color: string; 
         <button
           type="button"
           onClick={onRemove}
-          className="rounded-full px-1 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
+          className="rounded-full p-0.5 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
           aria-label={`Remove ${name}`}
         >
-          x
+          <XIcon />
         </button>
       ) : null}
     </span>

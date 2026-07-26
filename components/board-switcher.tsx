@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useBoard } from "@/lib/board-store";
+import { ChevronDownIcon } from "./ui-icons";
 
 type BoardAction = "create" | "duplicate";
 
@@ -62,16 +63,21 @@ export default function BoardSwitcher() {
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Board</span>
-        <select
-          value={activeBoardId}
-          onChange={(event) => void switchBoard(event.target.value)}
-          className="min-w-44 rounded-md border bg-white px-3 py-1.5 text-sm outline-none focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950"
-          aria-label="Select board"
-        >
-          {boards.map((board) => (
-            <option value={board.id} key={board.id}>{board.title}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={activeBoardId}
+            onChange={(event) => void switchBoard(event.target.value)}
+            className="h-8 min-w-44 appearance-none rounded-md border border-slate-200 bg-white px-3 pr-9 text-sm font-medium text-slate-700 outline-none focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+            aria-label="Select board"
+          >
+            {boards.map((board) => (
+              <option value={board.id} key={board.id}>{board.title}</option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+            <ChevronDownIcon />
+          </span>
+        </div>
       </div>
 
       <div className="relative" ref={menuRef}>

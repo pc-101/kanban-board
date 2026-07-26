@@ -3,6 +3,7 @@ import { KeyboardEvent, useMemo, useState } from "react";
 import { colorForAssignee } from "@/lib/assignee-colors";
 import { useBoard, Task } from "@/lib/board-store";
 import TaskDetailModal from "./task-detail-modal";
+import { XIcon } from "./ui-icons";
 
 export default function TaskCard({ task, columnId }: { task: Task; columnId: string }) {
   const removeTask = useBoard((state) => state.removeTask);
@@ -61,10 +62,10 @@ export default function TaskCard({ task, columnId }: { task: Task; columnId: str
               event.stopPropagation();
               removeTask(task.id, columnId);
             }}
-            className="rounded-md px-2 py-0.5 text-xs text-slate-500 hover:bg-black/5 dark:text-slate-400 dark:hover:bg-white/5"
+            className="rounded-full p-1 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
             aria-label="Delete task"
           >
-            x
+            <XIcon />
           </button>
         </div>
       </div>
