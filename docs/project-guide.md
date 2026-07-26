@@ -13,7 +13,7 @@ Core capabilities:
 - drag-and-drop tasks
 - editable columns
 - task detail modal
-- shared assignee list with color-coded pills, search, add, and manage flows
+- shared assignee list with color-coded pills, search, add, color customization, and manage flows
 - explicit unassigned task labels
 - completed timestamps for tasks moved to Done
 - bulk clearing for Done tasks

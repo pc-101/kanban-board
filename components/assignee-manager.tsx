@@ -81,6 +81,7 @@ export default function AssigneeManager() {
   const assignees = useBoard((state) => state.assignees);
   const assigneeColors = useBoard((state) => state.assigneeColors);
   const addAssignee = useBoard((state) => state.addAssignee);
+  const updateAssigneeColor = useBoard((state) => state.updateAssigneeColor);
   const removeAssignee = useBoard((state) => state.removeAssignee);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -253,19 +254,40 @@ export default function AssigneeManager() {
 
         <div className="mt-4 divide-y dark:divide-slate-800">
           {assignees.length ? assignees.map((assignee) => (
-            <div key={assignee} className="flex items-center justify-between gap-3 py-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <AssigneeAvatar name={assignee} color={colorForAssignee(assignee, assigneeColors)} />
-                <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{assignee}</span>
+            <div key={assignee} className="space-y-3 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <AssigneeAvatar name={assignee} color={colorForAssignee(assignee, assigneeColors)} />
+                  <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{assignee}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeAssignee(assignee)}
+                  className="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
+                  aria-label={`Remove ${assignee}`}
+                >
+                  Remove
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => removeAssignee(assignee)}
-                className="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
-                aria-label={`Remove ${assignee}`}
-              >
-                Remove
-              </button>
+              <div className="flex flex-wrap gap-2 pl-9">
+                {ASSIGNEE_COLOR_OPTIONS.map((color) => {
+                  const isSelected = colorForAssignee(assignee, assigneeColors).toLowerCase() === color.toLowerCase();
+                  return (
+                    <button
+                      type="button"
+                      key={color}
+                      onClick={() => updateAssigneeColor(assignee, color)}
+                      className="h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1 dark:focus:ring-slate-500"
+                      style={{
+                        backgroundColor: color,
+                        borderColor: isSelected ? "#0f172a" : "transparent",
+                      }}
+                      aria-label={`Set ${assignee} color to ${color}`}
+                      aria-pressed={isSelected}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )) : (
             <EmptyAssignees onAdd={() => { setIsManageOpen(false); openAddModal(); }} />

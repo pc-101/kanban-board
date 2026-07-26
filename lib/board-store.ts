@@ -41,6 +41,7 @@ export type BoardState = {
   renameColumn: (columnId: string, title: string) => void;
   addColumn: (title: string) => void;
   addAssignee: (name: string, color?: string) => void;
+  updateAssigneeColor: (name: string, color: string) => void;
   removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
   clearColumnTasks: (columnId: string) => void;
@@ -503,6 +504,19 @@ export const useBoard = create<BoardState>((set, get) => ({
         assigneeColors: {
           ...s.assigneeColors,
           [trimmed]: color ?? colorForAssignee(trimmed, s.assigneeColors),
+        },
+      };
+    });
+    void get().persist();
+  },
+  updateAssigneeColor: (name, color) => {
+    set((s) => {
+      if (!s.assignees.includes(name)) return s;
+      return {
+        ...s,
+        assigneeColors: {
+          ...s.assigneeColors,
+          [name]: color,
         },
       };
     });
