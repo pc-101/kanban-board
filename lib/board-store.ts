@@ -43,6 +43,7 @@ export type BoardState = {
   clearColumnTasks: (columnId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   createBoard: (title: string) => Promise<void>;
+  duplicateBoard: (title: string) => Promise<void>;
   switchBoard: (boardId: string) => Promise<void>;
   hydrate: () => Promise<void>;
   persist: () => Promise<void>;
@@ -281,6 +282,37 @@ export const useBoard = create<BoardState>((set, get) => ({
 
     const boardId = `board-${nanoid(8)}`;
     const snapshot = createEmptyBoardSnapshot(trimmed);
+    const boardMeta = { id: boardId, title: trimmed, updatedAt: null };
+
+    set((state) => ({
+      ...state,
+      activeBoardId: boardId,
+      ...snapshot,
+      boards: mergeBoards(state.boards, boardMeta),
+      lastRemoteUpdatedAt: undefined,
+      syncError: undefined,
+    }));
+    writeLocalSnapshot(boardId, snapshot);
+    await get().persist();
+  },
+  duplicateBoard: async (title) => {
+    const current = get();
+    const trimmed = title.trim();
+    if (!trimmed) return;
+
+    const boardId = `board-${nanoid(8)}`;
+    const snapshot = {
+      ...snapshotFromState(current),
+      boardTitle: trimmed,
+      columns: current.columns.map((column) => ({
+        ...column,
+        taskIds: [...column.taskIds],
+      })),
+      tasks: Object.fromEntries(
+        Object.entries(current.tasks).map(([id, task]) => [id, { ...task }]),
+      ),
+      assignees: [...current.assignees],
+    };
     const boardMeta = { id: boardId, title: trimmed, updatedAt: null };
 
     set((state) => ({

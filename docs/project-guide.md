@@ -8,7 +8,7 @@ The app is a static-exportable Next.js 14 Kanban board. The browser owns the use
 
 Core capabilities:
 
-- multiple project boards
+- multiple project boards with create, duplicate, and switch actions
 - board renaming
 - drag-and-drop tasks
 - editable columns
@@ -31,7 +31,8 @@ app/
   globals.css               Tailwind and global styles
 components/
   board.tsx                 Board orchestration, hydration, polling, drag context
-  board-switcher.tsx        Create/switch project boards
+  board-switcher.tsx        Switch boards and open board-level actions
+  board-title.tsx           Active board title and rename controls
   board-color-picker.tsx    Board accent color picker
   assignee-manager.tsx      Create/remove shared assignees
   column.tsx                Column view with inline editing and task creation
@@ -74,7 +75,7 @@ The store tracks:
 - latest remote update timestamp
 - sync errors
 
-Actions in the store handle creating boards, switching boards, moving tasks, updating task details, adding/removing assignees, updating board color, and syncing with Supabase.
+Actions in the store handle creating boards, duplicating the active board, switching boards, moving tasks, updating task details, adding/removing assignees, updating board color, and syncing with Supabase.
 
 ## Data Shape
 
