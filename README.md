@@ -1,6 +1,6 @@
 # Kanban Board
 
-A Next.js 14 Kanban board for organizing project work across multiple boards. It includes drag-and-drop tasks, editable task details, assignees, board colors, simple Supabase sync, local Docker-backed Supabase development, and GitHub Pages deployment support.
+A Next.js 14 Kanban board for organizing project work across multiple boards. It includes drag-and-drop tasks, editable task details, assignees, board colors, simple Supabase sync, local Docker-backed Supabase development, and Netlify or GitHub Pages deployment support.
 
 ## Features
 
@@ -17,7 +17,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Sync to Supabase when configured, with `localStorage` as fallback/cache.
 - Poll Supabase every 10 seconds for newer remote board updates.
 - Toggle light/dark mode with `next-themes`.
-- Export statically for GitHub Pages.
+- Export statically for Netlify or GitHub Pages.
 
 ## Tech Stack
 
@@ -28,11 +28,11 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Zustand
 - Supabase
 - @hello-pangea/dnd
-- GitHub Pages
+- Netlify and GitHub Pages
 
 ## Prerequisites
 
-- Node.js 18.17+ or 20+
+- Node.js 22
 - `pnpm` v9 recommended
 - Docker Desktop for local Supabase development
 - A hosted Supabase project for production deployment
@@ -71,6 +71,7 @@ http://127.0.0.1:54323
 | `pnpm dev:local` | Start local Supabase, generate local env, and run Next dev. |
 | `pnpm dev:local:reset` | Start local Supabase, reset local DB from migrations/seeds, generate local env, and run Next dev. |
 | `pnpm build` | Build the static production app. |
+| `pnpm build:production` | Apply pending hosted Supabase migrations, then build the app. |
 | `pnpm start` | Serve the exported `out/` directory after a build. |
 | `pnpm lint` | Run ESLint. |
 | `pnpm supabase:start` | Start local Supabase Docker containers. |
@@ -80,6 +81,7 @@ http://127.0.0.1:54323
 | `pnpm supabase:env` | Write `.env.development.local` from local Supabase status. |
 | `pnpm supabase:dump:seed` | Save current local public data into `supabase/seed.sql`. |
 | `pnpm db:seed` | Seed one configured hosted Supabase board row from env values. |
+| `pnpm db:push:production` | Apply pending migrations using `SUPABASE_DB_URL`. |
 
 ## Local Vs Production
 
@@ -89,10 +91,10 @@ Local development uses Docker-backed Supabase:
 Next dev server -> local Supabase Docker -> local seeded data
 ```
 
-Production uses the static GitHub Pages app and your hosted Supabase project:
+Production uses the statically exported app and your hosted Supabase project:
 
 ```text
-GitHub Pages static app -> hosted Supabase project -> production data
+Netlify or GitHub Pages -> hosted Supabase project -> production data
 ```
 
 ## Documentation
@@ -112,14 +114,26 @@ docs/                   Deeper project and setup documentation
 .github/workflows/      GitHub Pages deployment workflow
 ```
 
-## Deployment
+## Fresh Netlify Production Deployment
 
-This project is configured for static export and GitHub Pages. Production Supabase values should be set as GitHub repository secrets:
+1. Create a hosted Supabase project. You do not need to create tables manually.
+2. In Supabase, copy the project URL and anon/publishable key from the project's API settings.
+3. Copy a Postgres connection string from **Connect** in the Supabase dashboard. Use the Session pooler string when the build environment cannot use IPv6, replace its password placeholder, and percent-encode special characters in the password.
+4. Add these variables in **Netlify → Project configuration → Environment variables**:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 NEXT_PUBLIC_SUPABASE_BOARD_ID
+SUPABASE_DB_URL
 ```
 
-The deployment workflow builds the app and publishes the exported `out/` directory to GitHub Pages.
+Set `NEXT_PUBLIC_SUPABASE_BOARD_ID` to an initial ID such as `default`. Scope all four variables to **Production** builds so previews cannot connect to production data. Only `SUPABASE_DB_URL` should be marked as containing a secret value; every `NEXT_PUBLIC_*` value is intentionally embedded in the browser bundle. The anon/publishable key is designed for browser use, while authorization is enforced by Supabase Row Level Security.
+
+Connect the repository to Netlify and deploy. The committed `netlify.toml` uses `pnpm build:production` for production deploys, which applies pending migrations before building and publishing `out/`. Deploy Previews and branch deploys run `pnpm build` and cannot modify the production database.
+
+The first browser visit creates the initial board row when the new `boards` table is empty. Future production deploys apply only migrations that have not already been recorded by Supabase.
+
+## GitHub Pages Deployment
+
+The existing `.github/workflows/deploy.yml` workflow builds the static app and publishes `out/`. Configure the three `NEXT_PUBLIC_SUPABASE_*` values as GitHub repository secrets and apply database migrations separately before the first deployment.

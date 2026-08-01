@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm build"
+  publish = "out"
+
+# Only production deploys may apply migrations. Deploy Previews and branch
+# deploys build the frontend without receiving or using the production DB URL.
+[context.production]
+  command = "pnpm build:production"

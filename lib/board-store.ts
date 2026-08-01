@@ -236,7 +236,18 @@ export const useBoard = create<BoardState>((set, get) => ({
 
     const local = readLocalSnapshot(storedBoardId);
     if (local) {
-      set((state) => ({ ...state, ...normalizeSnapshot(local, state) }));
+      set((state) => {
+        const snapshot = normalizeSnapshot(local, state);
+        return {
+          ...state,
+          ...snapshot,
+          boards: mergeBoards(state.boards, {
+            id: storedBoardId,
+            title: snapshot.boardTitle,
+            updatedAt: state.lastRemoteUpdatedAt ?? null,
+          }),
+        };
+      });
     }
 
     set({ isLoading: true, syncError: undefined });

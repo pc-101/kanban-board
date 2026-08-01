@@ -20,7 +20,7 @@ Core capabilities:
 - board accent colors
 - local cache/fallback through `localStorage`
 - Supabase persistence and polling sync
-- GitHub Pages deployment
+- Netlify and GitHub Pages deployment
 
 ## Code Map
 
@@ -112,10 +112,10 @@ Local development uses Docker-backed Supabase:
 Next dev server -> local Supabase Docker -> local seeded data
 ```
 
-Production uses GitHub Pages and hosted Supabase:
+Production uses a static host and hosted Supabase:
 
 ```text
-GitHub Pages static app -> hosted Supabase project -> production data
+Netlify or GitHub Pages -> hosted Supabase project -> production data
 ```
 
 The main reason for the split is safety. Local experiments should not mutate production data.
@@ -193,7 +193,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key>
 NEXT_PUBLIC_SUPABASE_BOARD_ID=dev-product-launch
 ```
 
-Production values should live in GitHub repository secrets:
+Production browser values should live in the deployment provider's environment variables:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
@@ -292,15 +292,34 @@ Anything only stored in the local Docker database is lost. Anything captured in 
 
 ## Production Supabase Setup
 
-For hosted Supabase, run the manual setup SQL:
+The recommended Netlify flow applies version-controlled migrations automatically. Configure these variables in Netlify:
 
 ```text
-docs/supabase-setup.sql
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_BOARD_ID
+SUPABASE_DB_URL
 ```
 
-That SQL mirrors the local migration and creates the `public.boards` table, RLS policies, and anon grants.
+`SUPABASE_DB_URL` is an administrative Postgres connection string used only while applying migrations. Scope all four variables to Production builds so previews cannot connect to production data. Mark only `SUPABASE_DB_URL` as secret: every `NEXT_PUBLIC_*` value is intentionally embedded in the browser bundle. Never give the database URL a `NEXT_PUBLIC_` prefix. Copy it from the Supabase dashboard's **Connect** dialog; use the Session pooler when the build environment does not support IPv6 and percent-encode special characters in the database password.
+
+Production deploys run:
+
+```bash
+pnpm build:production
+```
+
+This calls `supabase db push --db-url ...` and then `next build`. Supabase records applied migration versions, so later deploys apply only pending files from `supabase/migrations`. Netlify Deploy Previews and branch deploys use `pnpm build` and do not receive or use the production database URL.
+
+If another host is used, run `pnpm db:push:production` once with the four variables available before building. `docs/supabase-setup.sql` remains a manual fallback.
 
 The starter currently uses permissive anonymous policies so the static GitHub Pages app can read and write without authentication. This is useful for learning and demos. A real private board should add Supabase Auth and restrict access by user, board, or workspace.
+
+## Netlify Deployment
+
+The committed `netlify.toml` publishes `out/`. Its production context applies database migrations before the static build, while preview contexts only build the frontend. A fresh deployment therefore requires creating an empty Supabase project, adding the four environment variables above, connecting the repository to Netlify, and deploying.
+
+The app creates the initial board row on first use if the migrated table is empty; production seed data is optional.
 
 ## GitHub Pages Deployment
 
@@ -350,6 +369,6 @@ Local cache keys use the `kanban-board:v2` prefix. The cache helps the app remai
 - Use `pnpm supabase:dump:seed` when local sample data should become the new baseline.
 - Use migrations for schema changes, not `seed.sql`.
 - Use `seed.sql` for sample rows, not tables or policies.
-- Keep hosted Supabase credentials in GitHub Secrets for production.
+- Keep hosted Supabase credentials in deployment-provider secrets for production.
 - Keep local Docker credentials in `.env.development.local`, which should not be committed.
 - If Supabase warns that `[inbucket]` is deprecated, update `supabase/config.toml` to use `[local_smtp]` for the local email testing service.
