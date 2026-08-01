@@ -14,7 +14,7 @@ if (missingVariables.length) {
   process.exit(1);
 }
 
-const databaseUrl = process.env.SUPABASE_DB_URL;
+const databaseUrl = process.env.SUPABASE_DB_URL.trim();
 
 let protocol;
 try {
@@ -25,7 +25,9 @@ try {
 }
 
 if (protocol !== "postgres:" && protocol !== "postgresql:") {
-  console.error("SUPABASE_DB_URL must use the postgres:// or postgresql:// protocol.");
+  console.error(
+    `SUPABASE_DB_URL must use the postgres:// or postgresql:// protocol; Netlify supplied the ${protocol} protocol.`,
+  );
   process.exit(1);
 }
 
