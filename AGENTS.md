@@ -34,6 +34,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 - Read `scripts/push-production-schema.mjs` for production migration safeguards.
 - Read `lib/supabase.ts`, `lib/supabase-board.ts`, and `lib/board-store.ts` before describing persistence or synchronization. The UI uses a board snapshot, but shared storage is normalized and saves use entity-level patches.
 - Read `components/board.tsx`, `lib/supabase-board.ts`, and the Realtime publication migration before describing collaboration. Parent-board Realtime events trigger normalized reloads; visible-tab polling is the fallback. Different entities merge, while concurrent changes to the same entity remain last-write-wins.
+- Read `e2e/collaboration.spec.ts` and `playwright.config.ts` before changing or describing the local collaboration test. It resets local Supabase and requires port 3000.
 - Keep `README.md`, `docs/project-guide.md`, and `.env.production.local.example` aligned when production setup changes.
 
 ## Verified Deployment Architecture
@@ -61,6 +62,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 - Do not make preview or branch deploys capable of mutating the production schema or data.
 - Do not disable Netlify secret scanning globally to solve a false positive. Correct the variable's secret classification or use the narrowest justified exception.
 - Before reporting success, run the checks relevant to the change. For application changes, prefer `pnpm build`; for script-only changes, also run `node --check <script>`; always run `git diff --check`.
+- For collaboration changes, run `pnpm test:e2e:dev` when Docker and the Playwright Chromium browser are available.
 - Report exactly which checks ran and any checks that could not run. Never claim a remote migration or deploy succeeded unless it was actually executed against that environment.
 - Preserve unrelated user changes in a dirty worktree.
 

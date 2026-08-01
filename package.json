@@ -15,6 +15,7 @@
     "build:production": "pnpm db:push:production && pnpm build",
     "start": "npx serve@latest out -l 3000",
     "lint": "next lint",
+    "test:e2e:dev": "playwright test",
     "db:seed": "node scripts/seed-supabase-board.mjs",
     "db:push:production": "node scripts/push-production-schema.mjs",
     "db:seed:dev": "supabase db reset",
@@ -36,6 +37,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "24.7.2",
     "@types/react": "^18.2.79",

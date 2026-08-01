@@ -98,6 +98,7 @@ http://127.0.0.1:54323
 | `pnpm build:production` | Apply pending hosted Supabase migrations, then build the app. |
 | `pnpm start` | Serve the exported `out/` directory after a build. |
 | `pnpm lint` | Run ESLint. |
+| `pnpm test:e2e:dev` | Reset local Supabase and run the two-browser collaboration tests. |
 | `pnpm supabase:start` | Start local Supabase Docker containers. |
 | `pnpm supabase:stop` | Stop local Supabase Docker containers. |
 | `pnpm supabase:reset` | Rebuild local DB from migrations and `seed.sql`. |
@@ -120,6 +121,24 @@ Production uses the statically exported app and your hosted Supabase project:
 ```text
 Netlify or GitHub Pages -> hosted Supabase project -> production data
 ```
+
+## Collaboration E2E Test
+
+With Docker running and the project toolchain active, install Playwright's Chromium browser once on each machine:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+Then run the complete local collaboration test with one command:
+
+```bash
+pnpm test:e2e:dev
+```
+
+The command rebuilds the local database from migrations and seed data, starts the Next.js development server, and opens two isolated browser contexts. It verifies that different-task edits merge, Realtime updates reach the other browser without a reload, and same-task edits retain the documented last-write-wins behavior.
+
+This test intentionally resets local Supabase data. Port 3000 must be available before it starts. The local Supabase containers remain running afterward for continued development; stop them with `pnpm supabase:stop` when needed.
 
 ## Documentation
 

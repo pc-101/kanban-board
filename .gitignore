@@ -4,3 +4,5 @@ out/
 .env*.local
 .next-dev/
 **node_modules/**
+playwright-report/
+test-results/

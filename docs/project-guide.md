@@ -177,6 +177,14 @@ pnpm supabase:start && pnpm supabase:reset && pnpm supabase:env && pnpm dev
 
 Use `&&` instead of `;` in combined commands so setup stops if an earlier command fails.
 
+Run the two-browser collaboration test with:
+
+```bash
+pnpm test:e2e:dev
+```
+
+Playwright resets local Supabase, starts the development server, and verifies different-entity merging, Realtime delivery, and the same-entity last-write-wins boundary. Install its Chromium browser once per machine with `pnpm exec playwright install chromium`. Because the test uses `dev:local:reset`, it intentionally replaces current local data with the committed seed.
+
 ## Local Supabase Commands
 
 ```bash
