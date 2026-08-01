@@ -33,9 +33,33 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 ## Prerequisites
 
 - Node.js 22
-- `pnpm` v9 recommended
+- `nvm` on macOS or WSL
+- Corepack for the project-pinned pnpm version
 - Docker Desktop for local Supabase development
 - A hosted Supabase project for production deployment
+
+## Project Toolchain
+
+The repository pins Node 22 through `.nvmrc` and pnpm 9.15.9 through the `packageManager` field in `package.json`. The strict engine configuration stops immediately when the wrong Node or pnpm version is active instead of allowing a mismatched install.
+
+Complete this once on each development machine:
+
+```bash
+nvm install
+npm install --global corepack@latest
+corepack enable pnpm
+pnpm install --frozen-lockfile
+```
+
+Whenever you return after using another Node version, run one command from this repository:
+
+```bash
+nvm use
+```
+
+Corepack then selects pnpm 9.15.9 automatically when `pnpm` is invoked. If Node 22 is not installed on a new machine yet, use `nvm install` instead; it reads `.nvmrc`, installs the requested version, and switches to it.
+
+For a completely automatic switch, use [nvm's shell integration recipe](https://github.com/nvm-sh/nvm#deeper-shell-integration) to run `nvm use` when entering a directory containing `.nvmrc`. That hook belongs in `~/.zshrc` on macOS or `~/.bashrc`/`~/.zshrc` in WSL rather than in this repository.
 
 ## Quick Start
 

@@ -26,7 +26,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 
 ## Source-of-Truth Pointers
 
-- Read `package.json` for supported commands and the pinned Node.js major version.
+- Read `package.json`, `.nvmrc`, and `.npmrc` for supported commands and the pinned Node.js and pnpm toolchain. Do not bypass strict engine checks when validating project commands.
 - Read `next.config.js` before making claims about output mode, asset paths, or hosting behavior. The application uses a static export and publishes `out/`.
 - Read `netlify.toml` for Netlify build-context behavior.
 - Read `.github/workflows/deploy.yml` for GitHub Pages behavior. Do not assume that Netlify configuration also applies to GitHub Actions.

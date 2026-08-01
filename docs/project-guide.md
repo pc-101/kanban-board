@@ -149,6 +149,8 @@ The main reason for the split is safety. Local experiments should not mutate pro
 
 ## Local Development
 
+The committed `.nvmrc`, `packageManager` field, and `.npmrc` keep Node and pnpm consistent across macOS and WSL. After completing the one-time Corepack setup documented in `README.md`, run `nvm use` whenever returning from a repository that uses another Node version. Corepack selects the project-pinned pnpm version automatically.
+
 Start the normal local environment:
 
 ```bash
