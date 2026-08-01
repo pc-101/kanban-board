@@ -321,6 +321,21 @@ The committed `netlify.toml` publishes `out/`. Its production context applies da
 
 The app creates the initial board row on first use if the migrated table is empty; production seed data is optional.
 
+### Environment-variable precedence and imports
+
+Importing an `.env` file does not convert URI protocols. A `postgresql://` value remains a `postgresql://` value. Problems can arise when an import encounters an existing key or when variables that need different scopes, contexts, or secret classifications are imported together.
+
+Netlify resolves relevant conflicts as follows:
+
+- A value committed in `netlify.toml` overrides a value with the same key from the UI, CLI, or API.
+- A site-level variable overrides a shared team variable for the same scope and deploy context.
+- Contextual values can differ across Production, Deploy Previews, branch deploys, and local development.
+- An `.env` import's merge strategy determines whether conflicting values are skipped or updated; scope changes may not apply to an existing conflicting variable in every import mode.
+
+When a build receives an unexpected value, filter the environment-variable view to the failing deploy context and inspect both project and team settings. For `SUPABASE_DB_URL`, the safest recovery is to delete its site-level contextual values and recreate it individually with **Builds** scope, **Production** context, and secret classification. Store only the raw Session pooler URI, without a key prefix, quotes, or command-line wrapper.
+
+Prefer individual entry for administrative credentials or variables that require unique scopes and contexts. Bulk import is useful for groups of variables that intentionally share configuration, provided conflicts and the selected merge strategy are reviewed.
+
 ## GitHub Pages Deployment
 
 This app uses static export:

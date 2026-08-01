@@ -134,6 +134,20 @@ Connect the repository to Netlify and deploy. The committed `netlify.toml` uses 
 
 The first browser visit creates the initial board row when the new `boards` table is empty. Future production deploys apply only migrations that have not already been recorded by Supabase.
 
+### Netlify environment-variable troubleshooting
+
+Netlify does not change a `postgresql://` URI into an `https://` URI when importing an `.env` file. However, bulk imports can preserve conflicting keys or contextual values depending on the selected merge strategy, scope, and deploy context. Site-level variables also override shared team variables for the same scope and context, while values committed in `netlify.toml` override values managed in the Netlify UI.
+
+If the production build reports that `SUPABASE_DB_URL` has the wrong protocol:
+
+1. Filter the Netlify environment-variable view to **Production**.
+2. Delete every site-level contextual value for `SUPABASE_DB_URL`.
+3. Check **Team settings → Environment variables** for a shared value with the same key.
+4. Recreate `SUPABASE_DB_URL` as an individual site variable with **Builds** scope and **Production** context.
+5. Paste only the raw `postgresql://...` Session pooler URI—without `SUPABASE_DB_URL=`, quotes, Markdown, or a `psql` command.
+
+For sensitive or scheme-specific values, creating the variable individually makes its key, scope, context, and secret classification easier to verify. Bulk `.env` import remains appropriate when those settings are intentionally the same for every imported variable and conflicts are reviewed carefully.
+
 ## GitHub Pages Deployment
 
 The existing `.github/workflows/deploy.yml` workflow builds the static app and publishes `out/`. Configure the three `NEXT_PUBLIC_SUPABASE_*` values as GitHub repository secrets and apply database migrations separately before the first deployment.
