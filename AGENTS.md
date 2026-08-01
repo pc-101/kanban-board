@@ -33,6 +33,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 - Read `supabase/migrations/` for the production database schema and policies.
 - Read `scripts/push-production-schema.mjs` for production migration safeguards.
 - Read `lib/supabase.ts`, `lib/supabase-board.ts`, and `lib/board-store.ts` before describing persistence or synchronization.
+- Read `components/board.tsx` and the Realtime publication migration before describing collaboration latency. Realtime is primary for active-board inserts and updates; visible-tab polling is the fallback.
 - Keep `README.md`, `docs/project-guide.md`, and `.env.production.local.example` aligned when production setup changes.
 
 ## Verified Deployment Architecture

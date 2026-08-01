@@ -91,3 +91,26 @@ export async function deleteBoardFromSupabase(boardId: string) {
 
   return { error };
 }
+
+export function subscribeToBoardChanges(boardId: string, onChange: () => void) {
+  const supabase = getSupabase();
+  if (!supabase) return () => {};
+
+  const channel = supabase
+    .channel(`board-changes:${boardId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "boards", filter: `id=eq.${boardId}` },
+      onChange,
+    )
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "boards", filter: `id=eq.${boardId}` },
+      onChange,
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}

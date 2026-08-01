@@ -19,7 +19,7 @@ Core capabilities:
 - bulk clearing for Done tasks
 - board accent colors
 - local cache/fallback through `localStorage`
-- Supabase persistence and polling sync
+- Supabase persistence, Realtime updates, and polling fallback
 - Netlify and GitHub Pages deployment
 
 ## Code Map
@@ -30,7 +30,7 @@ app/
   page.tsx                  Kanban board page shell
   globals.css               Tailwind and global styles
 components/
-  board.tsx                 Board orchestration, hydration, polling, drag context
+  board.tsx                 Board orchestration, hydration, Realtime/polling sync, drag context
   board-switcher.tsx        Switch boards and open board-level actions
   board-title.tsx           Active board title and rename controls
   board-color-picker.tsx    Board accent color picker
@@ -367,9 +367,9 @@ pnpm start
 
 The collaboration model is intentionally simple.
 
-Each browser session saves changes to Supabase. While the board is visible, it polls Supabase every 10 seconds and applies a newer remote snapshot if one exists.
+Each browser session saves changes to Supabase. The active board subscribes to inserts and updates through Supabase Realtime, then loads and applies the newer remote snapshot. A 10-second poll runs while the tab is visible as a fallback for missed or interrupted Realtime events.
 
-This is last-write-wins sync. It is not Google Docs-style operational transform or CRDT collaboration. If two people edit the same board at the same time, the newest saved board snapshot can overwrite the older one.
+This remains whole-board, last-write-wins sync. It is not Google Docs-style operational transform or CRDT collaboration. If two people edit the same board at nearly the same time, the newest saved board snapshot can overwrite the older one. Realtime reduces how long collaborators wait to see changes; it does not merge simultaneous edits.
 
 ## Persistence Layers
 

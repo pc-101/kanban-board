@@ -2,6 +2,7 @@
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { useEffect, useMemo } from "react";
 import { useBoard } from "@/lib/board-store";
+import { subscribeToBoardChanges } from "@/lib/supabase-board";
 import AssigneeManager from "./assignee-manager";
 import BoardColorPicker from "./board-color-picker";
 import BoardSwitcher from "./board-switcher";
@@ -37,6 +38,7 @@ export default function Board() {
   const hydrate = useBoard((state) => state.hydrate);
   const syncFromRemote = useBoard((state) => state.syncFromRemote);
   const boardColor = useBoard((state) => state.boardColor);
+  const activeBoardId = useBoard((state) => state.activeBoardId);
 
   useEffect(() => {
     void hydrate();
@@ -50,6 +52,10 @@ export default function Board() {
     const interval = window.setInterval(poll, 10000);
     return () => window.clearInterval(interval);
   }, [hydrate, syncFromRemote]);
+
+  useEffect(() => subscribeToBoardChanges(activeBoardId, () => {
+    void useBoard.getState().syncFromRemote();
+  }), [activeBoardId]);
 
   const { accent, subtleAccent, washAccent } = useMemo(() => ({
     accent: boardColor,
@@ -114,7 +120,7 @@ export default function Board() {
 
       <p className="mt-1 inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <DragHintIcon />
-        Drag tasks between columns. Titles and tasks persist in your browser.
+        Drag tasks between columns. Changes save locally and sync through Supabase.
       </p>
     </section>
   );

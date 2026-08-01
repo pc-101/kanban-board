@@ -208,11 +208,17 @@ const remoteIsNewer = (remoteUpdatedAt?: string | null, currentUpdatedAt?: strin
 
 const applyRemoteBoard = (remote: RemoteBoard, fallback: BoardState) => {
   const snapshot = normalizeSnapshot(remote.snapshot, fallback);
+  const updatedAt = remote.updatedAt ?? fallback.lastRemoteUpdatedAt ?? null;
   writeLocalSnapshot(remote.id, snapshot);
   return {
     activeBoardId: remote.id,
     ...snapshot,
-    lastRemoteUpdatedAt: remote.updatedAt ?? fallback.lastRemoteUpdatedAt,
+    boards: mergeBoards(fallback.boards, {
+      id: remote.id,
+      title: snapshot.boardTitle,
+      updatedAt,
+    }),
+    lastRemoteUpdatedAt: updatedAt ?? undefined,
     syncError: undefined,
   };
 };
