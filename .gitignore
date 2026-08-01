@@ -3,4 +3,4 @@ out/
 .env.local
 .env*.local
 .next-dev/
-.node_modules
+**node_modules/**
