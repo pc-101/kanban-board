@@ -46,10 +46,10 @@ These instructions apply to the entire repository. Verify claims against the fil
 
 ## Supabase Credential Boundaries
 
-- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SUPABASE_BOARD_ID` are browser-visible configuration. They cannot be treated as confidential because Next.js embeds them in the client bundle.
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SUPABASE_BOARD_ID` are browser-visible configuration. They cannot be treated as confidential because Next.js embeds them in the client bundle.
 - `SUPABASE_DB_URL` is an administrative, build-only secret used by the production migration script. Never expose it through a `NEXT_PUBLIC_` variable, print it, commit a real value, or pass it into browser code.
 - For Netlify, scope all four variables to Production builds. Mark only `SUPABASE_DB_URL` as containing a secret value.
-- The public URL and anon/publishable key cannot create database tables. Schema creation requires the administrative database connection or another privileged migration workflow.
+- The public URL and publishable key cannot create database tables. Schema creation requires the administrative database connection or another privileged migration workflow.
 - Database authorization depends on Supabase Row Level Security. A board ID is not an authorization mechanism.
 - Do not add `--include-seed` to production migration commands. The application creates its initial board row when the migrated table is empty.
 

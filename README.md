@@ -117,18 +117,20 @@ docs/                   Deeper project and setup documentation
 ## Fresh Netlify Production Deployment
 
 1. Create a hosted Supabase project. You do not need to create tables manually.
-2. In Supabase, copy the project URL and anon/publishable key from the project's API settings.
+2. In Supabase, copy the project URL and publishable key (`sb_publishable_...`) from the project's **Connect** dialog or **Settings → API Keys**.
 3. Copy a Postgres connection string from **Connect** in the Supabase dashboard. Use the Session pooler string when the build environment cannot use IPv6, replace its password placeholder, and percent-encode special characters in the password.
 4. Add these variables in **Netlify → Project configuration → Environment variables**:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_SUPABASE_BOARD_ID
 SUPABASE_DB_URL
 ```
 
-Set `NEXT_PUBLIC_SUPABASE_BOARD_ID` to an initial ID such as `default`. Scope all four variables to **Production** builds so previews cannot connect to production data. Only `SUPABASE_DB_URL` should be marked as containing a secret value; every `NEXT_PUBLIC_*` value is intentionally embedded in the browser bundle. The anon/publishable key is designed for browser use, while authorization is enforced by Supabase Row Level Security.
+If upgrading an existing deployment, replace `NEXT_PUBLIC_SUPABASE_ANON_KEY` with `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in Netlify and paste an `sb_publishable_...` key. Find or create it under **Supabase → Settings → API Keys**. After all clients have migrated, use Supabase's key usage indicators before disabling the legacy anon key.
+
+Set `NEXT_PUBLIC_SUPABASE_BOARD_ID` to an initial ID such as `default`. Scope all four variables to **Production** builds so previews cannot connect to production data. Only `SUPABASE_DB_URL` should be marked as containing a secret value; every `NEXT_PUBLIC_*` value is intentionally embedded in the browser bundle. The publishable key is designed for browser use, while authorization is enforced by Supabase Row Level Security.
 
 Connect the repository to Netlify and deploy. The committed `netlify.toml` uses `pnpm build:production` for production deploys, which applies pending migrations before building and publishing `out/`. Deploy Previews and branch deploys run `pnpm build` and cannot modify the production database.
 

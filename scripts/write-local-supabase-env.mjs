@@ -12,14 +12,14 @@ const output = execFileSync(
     "--override-name",
     "api.url=NEXT_PUBLIC_SUPABASE_URL",
     "--override-name",
-    "auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "auth.anon_key=NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   ],
   { encoding: "utf8" },
 );
 
 const lines = output
   .split(/\r?\n/)
-  .filter((line) => line.startsWith("NEXT_PUBLIC_SUPABASE_URL=") || line.startsWith("NEXT_PUBLIC_SUPABASE_ANON_KEY="));
+  .filter((line) => line.startsWith("NEXT_PUBLIC_SUPABASE_URL=") || line.startsWith("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="));
 
 if (lines.length < 2) {
   console.error("Could not find local Supabase URL/key. Is `pnpm supabase:start` running?");

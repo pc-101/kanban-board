@@ -4,7 +4,7 @@ This guide explains how the Kanban board is structured, how the local Supabase w
 
 ## Application Overview
 
-The app is a static-exportable Next.js 14 Kanban board. The browser owns the user interface and talks directly to Supabase through the public anon key when Supabase env values are configured.
+The app is a static-exportable Next.js 14 Kanban board. The browser owns the user interface and talks directly to Supabase through a publishable key when Supabase env values are configured.
 
 Core capabilities:
 
@@ -189,7 +189,7 @@ It should contain local values similar to:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local public API key>
 NEXT_PUBLIC_SUPABASE_BOARD_ID=dev-product-launch
 ```
 
@@ -197,7 +197,7 @@ Production browser values should live in the deployment provider's environment v
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_SUPABASE_BOARD_ID
 ```
 
@@ -296,10 +296,12 @@ The recommended Netlify flow applies version-controlled migrations automatically
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 NEXT_PUBLIC_SUPABASE_BOARD_ID
 SUPABASE_DB_URL
 ```
+
+Existing deployments must replace `NEXT_PUBLIC_SUPABASE_ANON_KEY` with `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and use an `sb_publishable_...` value from **Supabase → Settings → API Keys**. Keep the legacy key active until every deployed client has switched; review Supabase's key usage indicators before disabling it.
 
 `SUPABASE_DB_URL` is an administrative Postgres connection string used only while applying migrations. Scope all four variables to Production builds so previews cannot connect to production data. Mark only `SUPABASE_DB_URL` as secret: every `NEXT_PUBLIC_*` value is intentionally embedded in the browser bundle. Never give the database URL a `NEXT_PUBLIC_` prefix. Copy it from the Supabase dashboard's **Connect** dialog; use the Session pooler when the build environment does not support IPv6 and percent-encode special characters in the database password.
 

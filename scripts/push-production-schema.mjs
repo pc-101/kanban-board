@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 
 const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "NEXT_PUBLIC_SUPABASE_BOARD_ID",
   "SUPABASE_DB_URL",
 ];

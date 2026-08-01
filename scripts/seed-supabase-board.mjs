@@ -188,14 +188,14 @@ const singleBoard = {
 loadLocalEnv();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabasePublishableKey) {
   console.error(`Missing Supabase environment values. Check ${envPath}.`);
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const boards = mode === "dev-samples" ? sampleBoards : [{ ...singleBoard, id: process.env.NEXT_PUBLIC_SUPABASE_BOARD_ID || singleBoard.id }];
 const updatedAt = new Date().toISOString();
 
