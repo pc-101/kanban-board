@@ -14,8 +14,8 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Mark tasks with a completed timestamp when moved into Done.
 - Clear all Done tasks when completed work should be removed from the board.
 - Customize board accent colors.
-- Sync to Supabase when configured, with `localStorage` as fallback/cache.
-- Reflect collaborators' active-board changes through Supabase Realtime, with a 10-second polling fallback.
+- Sync normalized board, column, task, and assignee records to Supabase, with `localStorage` as fallback/cache.
+- Merge concurrent edits to different board entities and reflect them through Supabase Realtime, with a 10-second polling fallback.
 - Toggle light/dark mode with `next-themes`.
 - Export statically for Netlify or GitHub Pages.
 
@@ -100,7 +100,6 @@ Netlify or GitHub Pages -> hosted Supabase project -> production data
 ## Documentation
 
 - [Project Guide](docs/project-guide.md) - architecture, state management, Supabase setup, migrations, seeds, sync behavior, and deployment notes.
-- [Supabase Setup SQL](docs/supabase-setup.sql) - manual SQL fallback for hosted Supabase setup.
 
 ## Project Structure
 

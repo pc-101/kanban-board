@@ -1,5 +1,5 @@
-insert into public.boards (id, data, updated_at)
-values
+select public.import_board_snapshot(seed.id, seed.data)
+from (values
   (
     'dev-product-launch',
     '{
@@ -17,8 +17,7 @@ values
         "finalize-pricing": { "id": "finalize-pricing", "title": "Finalize pricing page copy", "assignee": "Alex", "description": "Review pricing language with product and marketing." },
         "create-brief": { "id": "create-brief", "title": "Create stakeholder brief", "assignee": "Pat", "description": "Summarize positioning, risks, and rollout timeline." }
       }
-    }'::jsonb,
-    now()
+    }'::jsonb
   ),
   (
     'dev-website-refresh',
@@ -36,8 +35,7 @@ values
         "collect-testimonials": { "id": "collect-testimonials", "title": "Collect customer testimonials", "assignee": "Jordan", "description": "Gather three short quotes for the refreshed landing page." },
         "build-case-study": { "id": "build-case-study", "title": "Build featured case study block", "assignee": "Lee", "dueDate": "2026-08-12", "description": "Create the first version of the reusable case study section." }
       }
-    }'::jsonb,
-    now()
+    }'::jsonb
   ),
   (
     'dev-ops-backlog',
@@ -55,9 +53,6 @@ values
         "document-runbook": { "id": "document-runbook", "title": "Document deploy rollback runbook", "assignee": "Chris", "dueDate": "2026-08-16", "description": "Write the rollback checklist for failed production deploys." },
         "rotate-keys": { "id": "rotate-keys", "title": "Rotate staging API keys", "assignee": "Rae", "description": "Replace staging credentials and confirm dependent services are healthy." }
       }
-    }'::jsonb,
-    now()
+    }'::jsonb
   )
-on conflict (id) do update
-set data = excluded.data,
-    updated_at = excluded.updated_at;
+) as seed(id, data);

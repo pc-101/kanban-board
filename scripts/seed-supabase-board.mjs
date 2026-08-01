@@ -197,21 +197,41 @@ if (!supabaseUrl || !supabasePublishableKey) {
 
 const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const boards = mode === "dev-samples" ? sampleBoards : [{ ...singleBoard, id: process.env.NEXT_PUBLIC_SUPABASE_BOARD_ID || singleBoard.id }];
-const updatedAt = new Date().toISOString();
+const fallbackColors = ["#3b82f6", "#fb7185", "#8b5cf6", "#34d399", "#f59e0b"];
 
-const { data, error } = await supabase
-  .from("boards")
-  .upsert(boards.map((board) => ({ id: board.id, data: board.data, updated_at: updatedAt })))
-  .select("id, updated_at");
+const patchForSnapshot = (snapshot) => ({
+  board: { title: snapshot.boardTitle, color: snapshot.boardColor },
+  columns: snapshot.columns.map((column, position) => ({ id: column.id, title: column.title, position })),
+  tasks: snapshot.columns.flatMap((column) => column.taskIds.map((taskId, position) => ({
+    ...snapshot.tasks[taskId],
+    columnId: column.id,
+    position,
+  }))),
+  assignees: snapshot.assignees.map((name, position) => ({
+    name,
+    color: snapshot.assigneeColors?.[name] ?? fallbackColors[position % fallbackColors.length],
+    position,
+  })),
+  deletedColumnIds: [],
+  deletedTaskIds: [],
+  deletedAssigneeNames: [],
+});
 
-if (error) {
-  console.error("Seed failed:", error.message);
-  console.error("Code:", error.code ?? "n/a");
-  process.exit(1);
+for (const board of boards) {
+  const { error } = await supabase.rpc("apply_board_patch", {
+    p_board_id: board.id,
+    p_snapshot: board.data,
+    p_patch: patchForSnapshot(board.data),
+  });
+
+  if (error) {
+    console.error(`Seed failed for ${board.id}:`, error.message);
+    console.error("Code:", error.code ?? "n/a");
+    process.exit(1);
+  }
 }
 
-console.log(`Seeded ${data.length} board row${data.length === 1 ? "" : "s"} from ${envPath}:`);
-for (const row of data) {
-  const board = boards.find((item) => item.id === row.id);
-  console.log(`- ${row.id}: ${board?.data.boardTitle ?? row.id} (${Object.keys(board?.data.tasks ?? {}).length} tasks)`);
+console.log(`Seeded ${boards.length} board${boards.length === 1 ? "" : "s"} from ${envPath}:`);
+for (const board of boards) {
+  console.log(`- ${board.id}: ${board.data.boardTitle} (${Object.keys(board.data.tasks).length} tasks)`);
 }

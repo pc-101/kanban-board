@@ -53,7 +53,6 @@ supabase/
   seed.sql                  Local sample data baseline
   migrations/               Schema history
 docs/
-  supabase-setup.sql        Manual hosted Supabase setup fallback
 .github/workflows/
   deploy.yml                GitHub Pages deployment workflow
 ```
@@ -79,17 +78,45 @@ Actions in the store handle creating boards, duplicating the active board, delet
 
 ## Data Shape
 
-Supabase stores each board as one row in `public.boards`:
+The browser still uses one convenient `BoardSnapshot` object for rendering, but Supabase stores its independently editable parts in normalized tables:
 
 ```sql
 public.boards (
   id text primary key,
-  data jsonb not null,
+  data jsonb not null, -- temporary compatibility copy
+  title text not null,
+  color text not null,
   updated_at timestamptz not null default now()
+)
+
+public.board_columns (
+  board_id text,
+  id text,
+  title text,
+  position integer
+)
+
+public.board_tasks (
+  board_id text,
+  id text,
+  column_id text,
+  position integer,
+  title text,
+  assignee text,
+  description text,
+  due_date text,
+  completed_at timestamptz
+)
+
+public.board_assignees (
+  board_id text,
+  name text,
+  color text,
+  position integer
 )
 ```
 
-The `data` JSON contains the current board snapshot:
+`lib/supabase-board.ts` reconstructs the UI snapshot from those rows:
 
 ```text
 boardTitle
@@ -102,7 +129,7 @@ tasks
 
 Task records can include title, assignee, description, due date, and completed timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. The unassigned state uses a reserved neutral color that is intentionally excluded from the selectable assignee palette. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
 
-This keeps the schema intentionally simple for a starter app. A larger production app would likely normalize boards, columns, tasks, assignees, users, and memberships into separate tables.
+The `boards.data` JSON column remains temporarily as a compatibility copy for boards created under the original schema. Current clients read the normalized tables and must not treat that JSON copy as the shared source of truth.
 
 ## Local Vs Production
 
@@ -313,7 +340,7 @@ pnpm build:production
 
 This calls `supabase db push --db-url ...` and then `next build`. Supabase records applied migration versions, so later deploys apply only pending files from `supabase/migrations`. Netlify Deploy Previews and branch deploys use `pnpm build` and do not receive or use the production database URL.
 
-If another host is used, run `pnpm db:push:production` once with the four variables available before building. `docs/supabase-setup.sql` remains a manual fallback.
+If another host is used, run `pnpm db:push:production` once with `SUPABASE_DB_URL` available before building. The versioned files under `supabase/migrations/` are the only supported schema setup path; this avoids a separate manual SQL file drifting out of date.
 
 The starter currently uses permissive anonymous policies so the static GitHub Pages app can read and write without authentication. This is useful for learning and demos. A real private board should add Supabase Auth and restrict access by user, board, or workspace.
 
@@ -365,11 +392,13 @@ pnpm start
 
 ## Sync Model
 
-The collaboration model is intentionally simple.
+The collaboration model uses entity-level patches.
 
-Each browser session saves changes to Supabase. The active board subscribes to inserts and updates through Supabase Realtime, then loads and applies the newer remote snapshot. A 10-second poll runs while the tab is visible as a fallback for missed or interrupted Realtime events.
+Each browser remembers the last normalized snapshot it loaded. When local state changes, `lib/supabase-board.ts` compares the new snapshot with that baseline and sends only the changed board metadata, columns, tasks, assignees, and deletions to the `apply_board_patch` database function. That function applies the patch in one transaction. The client reloads the merged normalized rows after the save.
 
-This remains whole-board, last-write-wins sync. It is not Google Docs-style operational transform or CRDT collaboration. If two people edit the same board at nearly the same time, the newest saved board snapshot can overwrite the older one. Realtime reduces how long collaborators wait to see changes; it does not merge simultaneous edits.
+Every successful patch also updates the parent board timestamp. The active board subscribes to that row through Supabase Realtime and reloads when another client saves. A 10-second poll runs while the tab is visible as a fallback for missed or interrupted Realtime events.
+
+Edits to different entities merge: for example, one person can rename task A while another edits task B without either whole board overwriting the other. Concurrent edits to the same task, the same board metadata, or the same ordering positions remain last-write-wins. This is a practical collaboration improvement, not operational transform or a CRDT.
 
 ## Persistence Layers
 

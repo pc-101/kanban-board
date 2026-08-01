@@ -64,6 +64,7 @@ const DEFAULT_BOARD_TITLE = "Kanban Board";
 const DROP_SAVE_DELAY_MS = 250;
 
 let dropSaveTimer: ReturnType<typeof setTimeout> | undefined;
+let pendingSaveCount = 0;
 
 const isDoneColumn = (column: Column) => column.title.trim().toLowerCase() === "done";
 
@@ -176,6 +177,8 @@ const snapshotFromState = (state: BoardState): BoardSnapshot => ({
   assignees: state.assignees,
   assigneeColors: state.assigneeColors,
 });
+
+const snapshotsMatch = (left: BoardSnapshot, right: BoardSnapshot) => JSON.stringify(left) === JSON.stringify(right);
 
 const boardStorageKey = (boardId: string) => `${STORAGE_PREFIX}:board:${boardId}`;
 
@@ -419,18 +422,44 @@ export const useBoard = create<BoardState>((set, get) => ({
   },
   persist: async () => {
     const state = get();
+    const boardId = state.activeBoardId;
     const snapshot = snapshotFromState(state);
-    writeLocalSnapshot(state.activeBoardId, snapshot);
+    writeLocalSnapshot(boardId, snapshot);
 
+    pendingSaveCount += 1;
     set({ isSyncing: true, syncError: undefined });
-    const { data, error } = await saveBoardToSupabase(state.activeBoardId, snapshot);
+    const { data, error } = await saveBoardToSupabase(boardId, snapshot);
+    pendingSaveCount -= 1;
     const updatedAt = data?.updatedAt ?? get().lastRemoteUpdatedAt;
-    set((current) => ({
-      isSyncing: false,
-      lastRemoteUpdatedAt: updatedAt,
-      syncError: error?.message,
-      boards: mergeBoards(current.boards, { id: current.activeBoardId, title: current.boardTitle, updatedAt: updatedAt ?? null }),
-    }));
+    set((current) => {
+      if (current.activeBoardId !== boardId) {
+        return {
+          isSyncing: pendingSaveCount > 0,
+          syncError: error?.message,
+          boards: mergeBoards(current.boards, {
+            id: boardId,
+            title: data?.snapshot.boardTitle ?? snapshot.boardTitle,
+            updatedAt: data?.updatedAt ?? null,
+          }),
+        };
+      }
+
+      const currentSnapshot = snapshotFromState(current);
+      if (data && snapshotsMatch(currentSnapshot, snapshot)) {
+        return {
+          ...current,
+          ...applyRemoteBoard(data, current),
+          isSyncing: pendingSaveCount > 0,
+        };
+      }
+
+      return {
+        isSyncing: pendingSaveCount > 0,
+        lastRemoteUpdatedAt: updatedAt,
+        syncError: error?.message,
+        boards: mergeBoards(current.boards, { id: current.activeBoardId, title: current.boardTitle, updatedAt: updatedAt ?? null }),
+      };
+    });
   },
   addTask: (columnId, title) => {
     const id = nanoid(6);

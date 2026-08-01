@@ -32,8 +32,8 @@ These instructions apply to the entire repository. Verify claims against the fil
 - Read `.github/workflows/deploy.yml` for GitHub Pages behavior. Do not assume that Netlify configuration also applies to GitHub Actions.
 - Read `supabase/migrations/` for the production database schema and policies.
 - Read `scripts/push-production-schema.mjs` for production migration safeguards.
-- Read `lib/supabase.ts`, `lib/supabase-board.ts`, and `lib/board-store.ts` before describing persistence or synchronization.
-- Read `components/board.tsx` and the Realtime publication migration before describing collaboration latency. Realtime is primary for active-board inserts and updates; visible-tab polling is the fallback.
+- Read `lib/supabase.ts`, `lib/supabase-board.ts`, and `lib/board-store.ts` before describing persistence or synchronization. The UI uses a board snapshot, but shared storage is normalized and saves use entity-level patches.
+- Read `components/board.tsx`, `lib/supabase-board.ts`, and the Realtime publication migration before describing collaboration. Parent-board Realtime events trigger normalized reloads; visible-tab polling is the fallback. Different entities merge, while concurrent changes to the same entity remain last-write-wins.
 - Keep `README.md`, `docs/project-guide.md`, and `.env.production.local.example` aligned when production setup changes.
 
 ## Verified Deployment Architecture
