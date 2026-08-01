@@ -70,8 +70,12 @@ These instructions apply to the entire repository. Verify claims against the fil
 
 - Use plain, reproducible deployment steps and distinguish Netlify production, Netlify previews, and GitHub Pages explicitly.
 - Never place real credentials or project-specific connection strings in examples.
-- Commit subjects should be imperative and concise.
-- Capitalize the first letter of every bullet point in commit-message bodies.
+- Include a proposed commit message in every final handoff that contains file changes; do not create the commit unless the user explicitly requests it.
+- Write commit subjects in the imperative present tense and keep them concise and limited to one sentence.
+- Prefix every commit whose primary purpose is correcting a bug with `BUGFIX: `, followed by the imperative subject.
+- Use a subject-only message for simple changes and add a body when a complex change benefits from operational or implementation detail.
+- Keep each body bullet to one present-tense sentence, capitalize its first letter, and wrap continuation lines at approximately 80 characters.
+- Wrap long subject or body text near 80 characters without changing the intended sentence.
 
 Example:
 
@@ -82,4 +86,10 @@ Automate Netlify Supabase setup and align deployment configs
 - Document fresh production deployment
 - Add production database URL template
 - Align GitHub Actions with Node 22
+```
+
+Bug-fix subject example:
+
+```text
+BUGFIX: Preserve concurrent task edits during Supabase synchronization
 ```
