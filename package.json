@@ -13,6 +13,7 @@
     "dev:local:reset": "pnpm supabase:start && pnpm supabase:reset && pnpm supabase:env && pnpm dev",
     "build": "next build",
     "build:production": "pnpm db:push:production && pnpm build",
+    "build:vercel": "node scripts/build-vercel.mjs",
     "start": "npx serve@latest out -l 3000",
     "lint": "next lint",
     "test:e2e:dev": "playwright test",

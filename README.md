@@ -1,6 +1,6 @@
 # Kanban Board
 
-A Next.js 14 Kanban board for organizing project work across multiple boards. It includes drag-and-drop tasks, editable task details, assignees, board colors, simple Supabase sync, local Docker-backed Supabase development, and Netlify or GitHub Pages deployment support.
+A Next.js 14 Kanban board for organizing project work across multiple boards. It includes drag-and-drop tasks, editable task details, assignees, board colors, simple Supabase sync, local Docker-backed Supabase development, and Vercel, Netlify, or GitHub Pages deployment support.
 
 ## Features
 
@@ -17,7 +17,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Sync normalized board, column, task, and assignee records to Supabase, with `localStorage` as fallback/cache.
 - Merge concurrent edits to different board entities and reflect them through Supabase Realtime, with a 10-second polling fallback.
 - Toggle light/dark mode with `next-themes`.
-- Export statically for Netlify or GitHub Pages.
+- Export statically for Vercel, Netlify, or GitHub Pages.
 
 ## Tech Stack
 
@@ -28,7 +28,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Zustand
 - Supabase
 - @hello-pangea/dnd
-- Netlify and GitHub Pages
+- Vercel, Netlify, and GitHub Pages
 
 ## Prerequisites
 
@@ -96,6 +96,7 @@ http://127.0.0.1:54323
 | `pnpm dev:local:reset` | Start local Supabase, reset local DB from migrations/seeds, generate local env, and run Next dev. |
 | `pnpm build` | Build the static production app. |
 | `pnpm build:production` | Apply pending hosted Supabase migrations, then build the app. |
+| `pnpm build:vercel` | Select the migration-safe build from Vercel's environment. |
 | `pnpm start` | Serve the exported `out/` directory after a build. |
 | `pnpm lint` | Run ESLint. |
 | `pnpm test:e2e:dev` | Reset local Supabase and run the two-browser collaboration tests. |
@@ -119,7 +120,7 @@ Next dev server -> local Supabase Docker -> local seeded data
 Production uses the statically exported app and your hosted Supabase project:
 
 ```text
-Netlify or GitHub Pages -> hosted Supabase project -> production data
+Vercel, Netlify, or GitHub Pages -> hosted Supabase project -> production data
 ```
 
 ## Collaboration E2E Test
@@ -155,6 +156,27 @@ supabase/               Local Supabase config, migrations, and seed data
 docs/                   Deeper project and setup documentation
 .github/workflows/      GitHub Pages deployment workflow
 ```
+
+## Fresh Vercel Production Deployment
+
+1. Create a hosted Supabase project. You do not need to create tables manually.
+2. Copy the project URL, publishable key, and Session pooler database connection string from Supabase. Replace the database password placeholder and percent-encode special characters in the password.
+3. In **Vercel → Project Settings → Environment Variables**, add these Production-only values:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+NEXT_PUBLIC_SUPABASE_BOARD_ID
+SUPABASE_DB_URL
+```
+
+Set `NEXT_PUBLIC_SUPABASE_BOARD_ID` to an initial ID such as `default`. Mark only `SUPABASE_DB_URL` as sensitive; the three `NEXT_PUBLIC_*` values are intentionally embedded in the browser bundle. Ensure all four values belong to the same Supabase project.
+
+Enable Vercel's **Automatically expose System Environment Variables** setting, then deploy the repository. The committed `vercel.json` runs `pnpm build:vercel`. Production deploys apply pending Supabase migrations before building, while Preview and Development environments run the frontend build without access to the production database URL.
+
+Do not assign the production Supabase values to Preview. A preview without public Supabase configuration uses browser-local storage; alternatively, give Preview the three public values for a separate, already-migrated preview database. Never provide the production `SUPABASE_DB_URL` to Preview.
+
+The first Production deploy creates the required schema and the first browser visit creates the initial board when the database is empty. Environment-variable changes affect only new Vercel deployments, so redeploy after changing a value.
 
 ## Fresh Netlify Production Deployment
 

@@ -29,6 +29,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 - Read `package.json`, `.nvmrc`, and `.npmrc` for supported commands and the pinned Node.js and pnpm toolchain. Do not bypass strict engine checks when validating project commands.
 - Read `next.config.js` before making claims about output mode, asset paths, or hosting behavior. The application uses a static export and publishes `out/`.
 - Read `netlify.toml` for Netlify build-context behavior.
+- Read `vercel.json` and `scripts/build-vercel.mjs` for Vercel build-context behavior.
 - Read `.github/workflows/deploy.yml` for GitHub Pages behavior. Do not assume that Netlify configuration also applies to GitHub Actions.
 - Read `supabase/migrations/` for the production database schema and policies.
 - Read `scripts/push-production-schema.mjs` for production migration safeguards.
@@ -41,6 +42,8 @@ These instructions apply to the entire repository. Verify claims against the fil
 
 - Netlify production deploys run `pnpm build:production`, which applies pending Supabase migrations and then runs the static Next.js build.
 - Netlify Deploy Previews and branch deploys run `pnpm build`; they must not apply production migrations.
+- Vercel Production deploys route through `pnpm build:vercel` to apply pending migrations before building.
+- Vercel Preview, Development, and custom environments route through `pnpm build`; they must not receive the production database URL or apply production migrations.
 - GitHub Actions deploys to GitHub Pages with `pnpm build`. It does not currently apply Supabase migrations automatically.
 - Both deployment paths use Node.js 22.
 - The Netlify publish directory and GitHub Pages artifact directory are both `out/`.
@@ -51,6 +54,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SUPABASE_BOARD_ID` are browser-visible configuration. They cannot be treated as confidential because Next.js embeds them in the client bundle.
 - `SUPABASE_DB_URL` is an administrative, build-only secret used by the production migration script. Never expose it through a `NEXT_PUBLIC_` variable, print it, commit a real value, or pass it into browser code.
 - For Netlify, scope all four variables to Production builds. Mark only `SUPABASE_DB_URL` as containing a secret value.
+- For Vercel, assign all four variables to Production only and mark only `SUPABASE_DB_URL` as sensitive.
 - The public URL and publishable key cannot create database tables. Schema creation requires the administrative database connection or another privileged migration workflow.
 - Database authorization depends on Supabase Row Level Security. A board ID is not an authorization mechanism.
 - Do not add `--include-seed` to production migration commands. The application creates its initial board row when the migrated table is empty.
@@ -68,7 +72,7 @@ These instructions apply to the entire repository. Verify claims against the fil
 
 ## Documentation and Commit Style
 
-- Use plain, reproducible deployment steps and distinguish Netlify production, Netlify previews, and GitHub Pages explicitly.
+- Use plain, reproducible deployment steps and distinguish Vercel, Netlify, and GitHub Pages contexts explicitly.
 - Never place real credentials or project-specific connection strings in examples.
 - Include a proposed commit message in every final handoff that contains file changes; do not create the commit unless the user explicitly requests it.
 - Write commit subjects in the imperative present tense and keep them concise and limited to one sentence.

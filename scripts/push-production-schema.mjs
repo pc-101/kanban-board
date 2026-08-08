@@ -1,5 +1,19 @@
 import { execFileSync } from "node:child_process";
 
+if (process.env.CONTEXT && process.env.CONTEXT !== "production") {
+  console.error(`Refusing to migrate the production database in Netlify context: ${process.env.CONTEXT}`);
+  process.exit(1);
+}
+
+const vercelEnvironment = process.env.VERCEL_TARGET_ENV || process.env.VERCEL_ENV;
+
+if ((process.env.VERCEL === "1" || vercelEnvironment) && vercelEnvironment !== "production") {
+  console.error(
+    `Refusing to migrate the production database in Vercel environment: ${vercelEnvironment || "unknown"}`,
+  );
+  process.exit(1);
+}
+
 const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
@@ -26,13 +40,8 @@ try {
 
 if (protocol !== "postgres:" && protocol !== "postgresql:") {
   console.error(
-    `SUPABASE_DB_URL must use the postgres:// or postgresql:// protocol; Netlify supplied the ${protocol} protocol.`,
+    `SUPABASE_DB_URL must use the postgres:// or postgresql:// protocol; the build environment supplied ${protocol}.`,
   );
-  process.exit(1);
-}
-
-if (process.env.CONTEXT && process.env.CONTEXT !== "production") {
-  console.error(`Refusing to migrate the production database in Netlify context: ${process.env.CONTEXT}`);
   process.exit(1);
 }
 

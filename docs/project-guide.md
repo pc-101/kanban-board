@@ -20,7 +20,7 @@ Core capabilities:
 - board accent colors
 - local cache/fallback through `localStorage`
 - Supabase persistence, Realtime updates, and polling fallback
-- Netlify and GitHub Pages deployment
+- Vercel, Netlify, and GitHub Pages deployment
 
 ## Code Map
 
@@ -46,6 +46,7 @@ lib/
   supabase.ts               Lazy Supabase browser client
   supabase-board.ts         Board list/load/save helpers
 scripts/
+  build-vercel.mjs          Vercel production/preview build router
   seed-supabase-board.mjs   Hosted/default board seeding helper
   write-local-supabase-env.mjs Writes local env values from Supabase CLI
 supabase/
@@ -55,6 +56,7 @@ supabase/
 docs/
 .github/workflows/
   deploy.yml                GitHub Pages deployment workflow
+vercel.json                 Vercel build-command configuration
 ```
 
 ## State Management
@@ -142,7 +144,7 @@ Next dev server -> local Supabase Docker -> local seeded data
 Production uses a static host and hosted Supabase:
 
 ```text
-Netlify or GitHub Pages -> hosted Supabase project -> production data
+Vercel, Netlify, or GitHub Pages -> hosted Supabase project -> production data
 ```
 
 The main reason for the split is safety. Local experiments should not mutate production data.
@@ -329,7 +331,7 @@ Anything only stored in the local Docker database is lost. Anything captured in 
 
 ## Production Supabase Setup
 
-The recommended Netlify flow applies version-controlled migrations automatically. Configure these variables in Netlify:
+The recommended Vercel and Netlify flows apply version-controlled migrations automatically during Production deploys. Configure these variables in the production environment of the selected provider:
 
 ```text
 NEXT_PUBLIC_SUPABASE_URL
@@ -348,11 +350,21 @@ Production deploys run:
 pnpm build:production
 ```
 
-This calls `supabase db push --db-url ...` and then `next build`. Supabase records applied migration versions, so later deploys apply only pending files from `supabase/migrations`. Netlify Deploy Previews and branch deploys use `pnpm build` and do not receive or use the production database URL.
+This calls `supabase db push --db-url ...` and then `next build`. Supabase records applied migration versions, so later deploys apply only pending files from `supabase/migrations`. Netlify previews and Vercel Preview or Development builds use `pnpm build` and do not receive or use the production database URL.
 
-If another host is used, run `pnpm db:push:production` once with `SUPABASE_DB_URL` available before building. The versioned files under `supabase/migrations/` are the only supported schema setup path; this avoids a separate manual SQL file drifting out of date.
+If another host is used, run `pnpm db:push:production` once with the required production variables available before building. The versioned files under `supabase/migrations/` are the only supported schema setup path; this avoids a separate manual SQL file drifting out of date.
 
 The starter currently uses permissive anonymous policies so the static GitHub Pages app can read and write without authentication. This is useful for learning and demos. A real private board should add Supabase Auth and restrict access by user, board, or workspace.
+
+## Vercel Deployment
+
+The committed `vercel.json` selects `pnpm build:vercel` for every Vercel deployment. `scripts/build-vercel.mjs` reads `VERCEL_TARGET_ENV` or `VERCEL_ENV`: Production routes to `pnpm build:production`, while every other environment routes to `pnpm build`.
+
+Enable **Automatically expose System Environment Variables** in the Vercel project so the build router can identify its environment. The router fails closed when neither environment variable is available. The production migration script independently rejects any Vercel invocation whose environment is not Production.
+
+Configure all four Supabase variables for Production and mark only `SUPABASE_DB_URL` as sensitive. Do not expose production values to Preview. Preview can remain local-storage-only or use the three public variables for a separate, previously migrated preview database.
+
+This separation means a fresh Vercel Production deployment applies the complete schema before building the static frontend, while Preview and Development builds cannot mutate the production database.
 
 ## Netlify Deployment
 
