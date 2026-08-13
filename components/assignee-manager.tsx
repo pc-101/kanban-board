@@ -319,7 +319,7 @@ export default function AssigneeManager() {
         >
           <UsersIcon />
           Assignees
-          <span className="text-slate-400 dark:text-slate-500">
+          <span className={`text-slate-400 transition-transform dark:text-slate-500 ${isDropdownOpen ? "rotate-180" : ""}`}>
             <ChevronDownIcon />
           </span>
         </button>
