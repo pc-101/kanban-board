@@ -129,7 +129,7 @@ export default function ThemedDatePicker({
                 <CalendarCell
                   date={date}
                   className={({ isDisabled, isFocusVisible, isOutsideMonth, isSelected, isToday }) =>
-                    `relative h-9 w-9 cursor-default rounded-md text-center text-sm leading-9 outline-none transition ${isOutsideMonth ? "text-slate-300 dark:text-slate-700" : "text-slate-700 hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-slate-800"} ${isToday && !isSelected ? "font-semibold text-sky-700 ring-1 ring-inset ring-sky-300 dark:text-sky-300 dark:ring-sky-700" : ""} ${isSelected ? "bg-gradient-to-br from-sky-500 to-violet-600 font-semibold text-white shadow-sm hover:from-sky-600 hover:to-violet-700 dark:text-white" : ""} ${isFocusVisible ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-white dark:ring-offset-slate-950" : ""} ${isDisabled ? "pointer-events-none opacity-40" : ""}`
+                    `relative h-9 w-9 cursor-default rounded-md text-center text-sm leading-9 outline-none ${isOutsideMonth ? "text-slate-300 dark:text-slate-700" : "text-slate-700 hover:bg-sky-50 dark:text-slate-200 dark:hover:bg-slate-800"} ${isToday && !isSelected ? "font-semibold text-sky-700 ring-1 ring-inset ring-sky-300 dark:text-sky-300 dark:ring-sky-700" : ""} ${isSelected ? "bg-gradient-to-br from-sky-500 to-violet-600 font-semibold text-white shadow-sm hover:from-sky-600 hover:to-violet-700 dark:text-white" : ""} ${isFocusVisible ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-white dark:ring-offset-slate-950" : ""} ${isDisabled ? "pointer-events-none opacity-40" : ""}`
                   }
                 />
               )}
