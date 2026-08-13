@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { colorForAssignee, UNASSIGNED_COLOR } from "@/lib/assignee-colors";
 import { Task, useBoard } from "@/lib/board-store";
 import SelectMenu from "./select-menu";
+import ThemedDatePicker from "./themed-date-picker";
 
 type TaskForm = {
   title: string;
@@ -18,6 +19,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
   const updateTask = useBoard((state) => state.updateTask);
   const [mounted, setMounted] = useState(false);
   const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [form, setForm] = useState<TaskForm>({
     title: task.title,
     assignee: task.assignee ?? "",
@@ -50,11 +52,11 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isAssigneeMenuOpen) onClose();
+      if (event.key === "Escape" && !isAssigneeMenuOpen && !isDatePickerOpen) onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isAssigneeMenuOpen, onClose]);
+  }, [isAssigneeMenuOpen, isDatePickerOpen, onClose]);
 
   const saveTask = () => {
     if (!form.title.trim()) return;
@@ -118,15 +120,11 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 className="h-10 w-full"
               />
             </div>
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Due date</span>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))}
-                className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
-              />
-            </label>
+            <ThemedDatePicker
+              value={form.dueDate}
+              onChange={(dueDate) => setForm((current) => ({ ...current, dueDate }))}
+              onOpenChange={setIsDatePickerOpen}
+            />
           </div>
 
           {completedLabel ? (
