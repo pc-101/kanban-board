@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { colorForAssignee, UNASSIGNED_COLOR } from "@/lib/assignee-colors";
 import { Task, useBoard } from "@/lib/board-store";
+import SelectMenu from "./select-menu";
 
 type TaskForm = {
   title: string;
@@ -12,8 +14,10 @@ type TaskForm = {
 
 export default function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void }) {
   const assignees = useBoard((state) => state.assignees);
+  const assigneeColors = useBoard((state) => state.assigneeColors);
   const updateTask = useBoard((state) => state.updateTask);
   const [mounted, setMounted] = useState(false);
+  const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
   const [form, setForm] = useState<TaskForm>({
     title: task.title,
     assignee: task.assignee ?? "",
@@ -24,6 +28,14 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
   const assigneeOptions = task.assignee && !assignees.includes(task.assignee)
     ? [...assignees, task.assignee]
     : assignees;
+  const assigneeMenuOptions = [
+    { value: "", label: "Unassigned", color: UNASSIGNED_COLOR },
+    ...assigneeOptions.map((assignee) => ({
+      value: assignee,
+      label: assignee,
+      color: colorForAssignee(assignee, assigneeColors),
+    })),
+  ];
   const completedLabel = useMemo(() => {
     if (!task.completedAt) return null;
     return new Intl.DateTimeFormat(undefined, {
@@ -38,11 +50,11 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !isAssigneeMenuOpen) onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, [isAssigneeMenuOpen, onClose]);
 
   const saveTask = () => {
     if (!form.title.trim()) return;
@@ -95,19 +107,17 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block space-y-1.5">
+            <div className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Assignee</span>
-              <select
+              <SelectMenu
                 value={form.assignee}
-                onChange={(event) => setForm((current) => ({ ...current, assignee: event.target.value }))}
-                className="w-full rounded-md border bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700 dark:bg-slate-950"
-              >
-                <option value="">Unassigned</option>
-                {assigneeOptions.map((assignee) => (
-                  <option value={assignee} key={assignee}>{assignee}</option>
-                ))}
-              </select>
-            </label>
+                options={assigneeMenuOptions}
+                onChange={(assignee) => setForm((current) => ({ ...current, assignee }))}
+                onOpenChange={setIsAssigneeMenuOpen}
+                ariaLabel="Select assignee"
+                className="h-10 w-full"
+              />
+            </div>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Due date</span>
               <input
