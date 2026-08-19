@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ASSIGNEE_COLOR_OPTIONS, colorForAssignee, initialsForAssignee } from "@/lib/assignee-colors";
 import { useBoard } from "@/lib/board-store";
@@ -57,6 +57,53 @@ function AssigneePill({ name, color, onRemove }: { name: string; color: string; 
     </span>
   );
 }
+
+function AssigneeOverflow({ names, colors }: { names: string[]; colors: Record<string, string> }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const tooltipId = useId();
+  const countLabel = `${names.length} more ${names.length === 1 ? "assignee" : "assignees"}`;
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <span
+        tabIndex={0}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setIsOpen(false)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setIsOpen(false);
+        }}
+        aria-label={`${countLabel}: ${names.join(", ")}`}
+        aria-describedby={isOpen ? tooltipId : undefined}
+        className="inline-flex h-8 cursor-default items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-500 shadow-sm outline-none transition hover:border-sky-200 hover:bg-sky-50 hover:text-slate-900 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus:ring-sky-950"
+      >
+        +{names.length}
+      </span>
+
+      {isOpen ? (
+        <div
+          id={tooltipId}
+          role="tooltip"
+          className="absolute right-0 top-10 z-40 min-w-48 rounded-md border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-950"
+        >
+          <p className="px-2 pb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">More assignees</p>
+          <div className="space-y-0.5">
+            {names.map((name) => (
+              <div key={name} className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: colorForAssignee(name, colors) }} aria-hidden="true" />
+                <span className="truncate">{name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 
 function EmptyAssignees({ onAdd }: { onAdd: () => void }) {
   return (
@@ -380,9 +427,7 @@ export default function AssigneeManager() {
           />
         ))}
         {assignees.length > 3 ? (
-          <span className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-            +{assignees.length - 3}
-          </span>
+          <AssigneeOverflow names={assignees.slice(3)} colors={assigneeColors} />
         ) : null}
       </div>
 
