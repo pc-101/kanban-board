@@ -11,25 +11,32 @@ type TaskForm = {
   assignee: string;
   dueDate: string;
   description: string;
+  columnId: string;
 };
 
 export default function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void }) {
   const assignees = useBoard((state) => state.assignees);
   const assigneeColors = useBoard((state) => state.assigneeColors);
+  const columns = useBoard((state) => state.columns);
   const updateTask = useBoard((state) => state.updateTask);
+  const moveTask = useBoard((state) => state.moveTask);
   const [mounted, setMounted] = useState(false);
   const [isAssigneeMenuOpen, setIsAssigneeMenuOpen] = useState(false);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const currentColumn = columns.find((column) => column.taskIds.includes(task.id));
   const [form, setForm] = useState<TaskForm>({
     title: task.title,
     assignee: task.assignee ?? "",
     dueDate: task.dueDate ?? "",
     description: task.description ?? "",
+    columnId: currentColumn?.id ?? "",
   });
 
   const assigneeOptions = task.assignee && !assignees.includes(task.assignee)
     ? [...assignees, task.assignee]
     : assignees;
+  const statusMenuOptions = columns.map((column) => ({ value: column.id, label: column.title }));
   const assigneeMenuOptions = [
     { value: "", label: "Unassigned", color: UNASSIGNED_COLOR },
     ...assigneeOptions.map((assignee) => ({
@@ -52,14 +59,17 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isAssigneeMenuOpen && !isDatePickerOpen) onClose();
+      if (event.key === "Escape" && !isAssigneeMenuOpen && !isStatusMenuOpen && !isDatePickerOpen) onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isAssigneeMenuOpen, isDatePickerOpen, onClose]);
+  }, [isAssigneeMenuOpen, isDatePickerOpen, isStatusMenuOpen, onClose]);
 
   const saveTask = () => {
     if (!form.title.trim()) return;
+    if (currentColumn && form.columnId && form.columnId !== currentColumn.id) {
+      moveTask(task.id, currentColumn.id, form.columnId, 0);
+    }
     updateTask(task.id, {
       title: form.title.trim(),
       assignee: form.assignee || undefined,
@@ -105,14 +115,27 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         </div>
 
         <div className="mt-5 space-y-4">
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Title</span>
-            <input
-              value={form.title}
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-              className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
-            />
-          </label>
+          <div className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Title</span>
+              <input
+                value={form.title}
+                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                className="h-10 w-full rounded-md border bg-transparent px-3 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
+              />
+            </label>
+            <div className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Status</span>
+              <SelectMenu
+                value={form.columnId}
+                options={statusMenuOptions}
+                onChange={(columnId) => setForm((current) => ({ ...current, columnId }))}
+                onOpenChange={setIsStatusMenuOpen}
+                ariaLabel="Select status"
+                className="h-10 w-full"
+              />
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="block space-y-1.5">
