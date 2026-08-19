@@ -133,6 +133,8 @@ export default function AssigneeManager() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
+  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
+  const [returnToManage, setReturnToManage] = useState(false);
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState(ASSIGNEE_COLOR_OPTIONS[0]);
@@ -159,16 +161,59 @@ export default function AssigneeManager() {
     setIsAddOpen(false);
     setIsManageOpen(false);
     setIsDropdownOpen(false);
+    setPendingRemoval(null);
+    setReturnToManage(false);
+  };
+
+  const requestAssigneeRemoval = (assignee: string, fromManager = false) => {
+    setPendingRemoval(assignee);
+    setReturnToManage(fromManager);
+    if (fromManager) setIsManageOpen(false);
+  };
+
+  const closeRemovalConfirmation = () => {
+    setPendingRemoval(null);
+    if (returnToManage) setIsManageOpen(true);
+    setReturnToManage(false);
+  };
+
+  const confirmAssigneeRemoval = () => {
+    if (pendingRemoval) removeAssignee(pendingRemoval);
+    setPendingRemoval(null);
+    if (returnToManage) setIsManageOpen(true);
+    setReturnToManage(false);
   };
 
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeAssigneeUi();
+    const handleKeyboardShortcut = (event: KeyboardEvent) => {
+      if (pendingRemoval && event.key === "Enter") {
+        event.preventDefault();
+        if (event.repeat) return;
+        removeAssignee(pendingRemoval);
+        setPendingRemoval(null);
+        if (returnToManage) setIsManageOpen(true);
+        setReturnToManage(false);
+        return;
+      }
+
+      if (event.key === "Escape" && pendingRemoval) {
+        event.preventDefault();
+        setPendingRemoval(null);
+        if (returnToManage) setIsManageOpen(true);
+        setReturnToManage(false);
+        return;
+      }
+
+      if (event.key !== "Escape") return;
+
+      setIsAddOpen(false);
+      setIsManageOpen(false);
+      setIsDropdownOpen(false);
     };
 
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, []);
+    document.addEventListener("keydown", handleKeyboardShortcut);
+    return () => document.removeEventListener("keydown", handleKeyboardShortcut);
+  }, [pendingRemoval, removeAssignee, returnToManage]);
 
   const openAddModal = () => {
     setName("");
@@ -309,7 +354,7 @@ export default function AssigneeManager() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeAssignee(assignee)}
+                  onClick={() => requestAssigneeRemoval(assignee, true)}
                   className="rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:text-slate-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-300"
                   aria-label={`Remove ${assignee}`}
                 >
@@ -352,6 +397,52 @@ export default function AssigneeManager() {
     </div>,
     document.body,
   ) : null;
+
+  const removalModal = pendingRemoval ? createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="remove-assignee-title"
+      aria-describedby="remove-assignee-description"
+      onMouseDown={closeRemovalConfirmation}
+    >
+      <div
+        className="w-full max-w-sm rounded-xl border bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <h2 id="remove-assignee-title" className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+          Remove {pendingRemoval}?
+        </h2>
+        <p id="remove-assignee-description" className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          This removes them from the board. Any tasks assigned to them will become unassigned.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={closeRemovalConfirmation}
+            autoFocus
+            className="rounded-md border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={confirmAssigneeRemoval}
+            aria-keyshortcuts="Enter"
+            className="flex min-w-20 flex-col items-center rounded-md border border-rose-600 bg-rose-600 px-4 py-1.5 text-sm font-medium leading-tight text-white hover:bg-rose-700 dark:border-rose-500 dark:bg-rose-500 dark:text-slate-950 dark:hover:bg-rose-400"
+          >
+            <span>Remove</span>
+            <span className="mt-0.5 text-[10px] font-normal text-rose-100 dark:text-rose-950/70" aria-hidden="true">
+              Enter ↵
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -423,7 +514,7 @@ export default function AssigneeManager() {
             key={assignee}
             name={assignee}
             color={colorForAssignee(assignee, assigneeColors)}
-            onRemove={() => removeAssignee(assignee)}
+            onRemove={() => requestAssigneeRemoval(assignee)}
           />
         ))}
         {assignees.length > 3 ? (
@@ -433,6 +524,7 @@ export default function AssigneeManager() {
 
       {addModal}
       {manageModal}
+      {removalModal}
     </div>
   );
 }
