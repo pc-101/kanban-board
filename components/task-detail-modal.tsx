@@ -80,6 +80,12 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
       <div
         className="w-full max-w-2xl rounded-xl border bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
         onMouseDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            saveTask();
+          }
+        }}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -157,6 +163,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
             type="button"
             onClick={saveTask}
             disabled={!form.title.trim()}
+            aria-keyshortcuts="Control+Enter Meta+Enter"
             className="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
           >
             Save changes
