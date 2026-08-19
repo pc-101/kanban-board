@@ -121,7 +121,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               <input
                 value={form.title}
                 onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-                className="h-10 w-full rounded-md border bg-transparent px-3 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
+                className="h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-sky-950"
               />
             </label>
             <div className="block space-y-1.5">
@@ -169,7 +169,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
               placeholder="Add context, acceptance notes, or blockers."
               rows={6}
-              className="w-full resize-none rounded-md border bg-transparent px-3 py-2 text-sm outline-none focus:border-sky-400 dark:border-slate-700"
+              className="w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-sky-950"
             />
           </label>
         </div>
