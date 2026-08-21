@@ -1,8 +1,10 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Task, useBoard } from "@/lib/board-store";
 import { ArchiveIcon, XIcon } from "./ui-icons";
+
+const RESTORE_COOLDOWN_MS = 300;
 
 const formatTimestamp = (value?: string) => {
   if (!value) return null;
@@ -14,6 +16,9 @@ const formatTimestamp = (value?: string) => {
 
 export default function ArchivedTasksModal({ tasks, onClose }: { tasks: Task[]; onClose: () => void }) {
   const restoreTask = useBoard((state) => state.restoreTask);
+  const [isRestoreCoolingDown, setIsRestoreCoolingDown] = useState(false);
+  const [restoredTaskTitle, setRestoredTaskTitle] = useState("");
+  const restoreCooldown = useRef<ReturnType<typeof setTimeout>>();
   const sortedTasks = [...tasks].sort((left, right) => (
     new Date(right.archivedAt ?? 0).getTime() - new Date(left.archivedAt ?? 0).getTime()
   ));
@@ -26,9 +31,30 @@ export default function ArchivedTasksModal({ tasks, onClose }: { tasks: Task[]; 
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
 
+  useEffect(() => () => {
+    if (restoreCooldown.current) clearTimeout(restoreCooldown.current);
+  }, []);
+
+  const handleRestore = (task: Task) => {
+    if (isRestoreCoolingDown) return;
+
+    setIsRestoreCoolingDown(true);
+    setRestoredTaskTitle(task.title);
+    restoreTask(task.id);
+
+    if (tasks.length === 1) {
+      onClose();
+      return;
+    }
+
+    restoreCooldown.current = setTimeout(() => {
+      setIsRestoreCoolingDown(false);
+    }, RESTORE_COOLDOWN_MS);
+  };
+
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 pb-6 pt-[clamp(1rem,8vh,5rem)]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="archived-tasks-title"
@@ -59,9 +85,9 @@ export default function ArchivedTasksModal({ tasks, onClose }: { tasks: Task[]; 
           </button>
         </div>
 
-        <div className="mt-5 max-h-96 space-y-2 overflow-y-auto">
+        <div className="mt-5 max-h-96 space-y-2 overflow-y-auto [scrollbar-gutter:stable]">
           {sortedTasks.map((task) => (
-            <div key={task.id} className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+            <div key={task.id} className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{task.title}</p>
                 <div className="mt-1 space-x-2 text-xs text-slate-500 dark:text-slate-400">
@@ -71,17 +97,18 @@ export default function ArchivedTasksModal({ tasks, onClose }: { tasks: Task[]; 
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  restoreTask(task.id);
-                  if (tasks.length === 1) onClose();
-                }}
-                className="shrink-0 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-sky-300 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-sky-700 dark:hover:bg-slate-900"
+                onClick={() => handleRestore(task)}
+                disabled={isRestoreCoolingDown}
+                className="mt-0.5 shrink-0 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-sky-300 hover:bg-sky-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-sky-700 dark:hover:bg-slate-900"
               >
                 Restore
               </button>
             </div>
           ))}
         </div>
+        <p className="sr-only" role="status" aria-live="polite">
+          {restoredTaskTitle ? `${restoredTaskTitle} restored.` : ""}
+        </p>
       </div>
     </div>,
     document.body,
