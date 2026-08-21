@@ -1,10 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const boardId = "dev-product-launch";
-
 async function openBoard(page: Page) {
   await page.goto("/");
-  await expect(page.getByRole("combobox", { name: "Select board" })).toHaveValue(boardId);
+  await expect(page.getByRole("button", { name: "Select board" })).toContainText("Product Launch");
 }
 
 async function stageTaskTitle(page: Page, currentTitle: string, nextTitle: string) {
@@ -80,4 +78,33 @@ test("uses last-write-wins when two collaborators edit the same task", async ({ 
   }
 
   await Promise.all([aliceContext.close(), bobContext.close()]);
+});
+
+test("archives and restores a completed task without deleting it", async ({ page }) => {
+  await openBoard(page);
+  await page.getByRole("button", { name: "Select board" }).click();
+  await page.getByRole("option", { name: "Ops Backlog" }).click();
+  await expect(page.getByRole("button", { name: "Select board" })).toContainText("Ops Backlog");
+
+  const taskTitle = "Rotate staging API keys";
+  const archiveResponse = page.waitForResponse((response) => (
+    response.url().includes("/rest/v1/rpc/apply_board_patch") && response.ok()
+  ));
+
+  await page.getByRole("button", { name: `Archive ${taskTitle}`, exact: true }).click();
+  await archiveResponse;
+  await expect(page.getByText(taskTitle, { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Archived (1)" }).click();
+  const archiveDialog = page.getByRole("dialog", { name: "Archived tasks" });
+  await expect(archiveDialog.getByText(taskTitle, { exact: true })).toBeVisible();
+
+  const restoreResponse = page.waitForResponse((response) => (
+    response.url().includes("/rest/v1/rpc/apply_board_patch") && response.ok()
+  ));
+
+  await archiveDialog.getByRole("button", { name: "Restore" }).click();
+  await restoreResponse;
+  await expect(archiveDialog).toHaveCount(0);
+  await expect(page.getByText(taskTitle, { exact: true })).toBeVisible();
 });

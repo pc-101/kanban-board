@@ -20,6 +20,7 @@ export type Task = {
   description?: string;
   dueDate?: string;
   completedAt?: string;
+  archivedAt?: string;
 };
 export type Column = { id: string; title: string; taskIds: string[] };
 export type BoardState = {
@@ -44,7 +45,9 @@ export type BoardState = {
   updateAssigneeColor: (name: string, color: string) => void;
   removeAssignee: (name: string) => void;
   removeTask: (taskId: string, columnId: string) => void;
-  clearColumnTasks: (columnId: string) => void;
+  archiveTask: (taskId: string, columnId: string) => void;
+  archiveColumnTasks: (columnId: string) => void;
+  restoreTask: (taskId: string) => void;
   updateTask: (taskId: string, updates: Partial<Omit<Task, "id">>) => void;
   createBoard: (title: string) => Promise<void>;
   duplicateBoard: (title: string) => Promise<void>;
@@ -480,20 +483,52 @@ export const useBoard = create<BoardState>((set, get) => ({
     });
     void get().persist();
   },
-  clearColumnTasks: (columnId) => {
+  archiveTask: (taskId, columnId) => {
     set((s) => {
       const column = s.columns.find((col) => col.id === columnId);
-      if (!column || column.taskIds.length === 0) return s;
-
-      const taskIds = new Set(column.taskIds);
-      const tasks = Object.fromEntries(
-        Object.entries(s.tasks).filter(([id]) => !taskIds.has(id)),
-      );
+      const task = s.tasks[taskId];
+      if (!column || !isDoneColumn(column) || !column.taskIds.includes(taskId) || !task || task.archivedAt) return s;
 
       return {
         ...s,
-        columns: s.columns.map((col) => col.id === columnId ? { ...col, taskIds: [] } : col),
-        tasks,
+        tasks: {
+          ...s.tasks,
+          [taskId]: { ...task, archivedAt: new Date().toISOString() },
+        },
+      };
+    });
+    void get().persist();
+  },
+  archiveColumnTasks: (columnId) => {
+    set((s) => {
+      const column = s.columns.find((col) => col.id === columnId);
+      if (!column || !isDoneColumn(column)) return s;
+
+      const archivedAt = new Date().toISOString();
+      const tasks = { ...s.tasks };
+      let changed = false;
+
+      for (const taskId of column.taskIds) {
+        const task = tasks[taskId];
+        if (!task || task.archivedAt) continue;
+        tasks[taskId] = { ...task, archivedAt };
+        changed = true;
+      }
+
+      return changed ? { ...s, tasks } : s;
+    });
+    void get().persist();
+  },
+  restoreTask: (taskId) => {
+    set((s) => {
+      const task = s.tasks[taskId];
+      if (!task?.archivedAt) return s;
+      return {
+        ...s,
+        tasks: {
+          ...s.tasks,
+          [taskId]: { ...task, archivedAt: undefined },
+        },
       };
     });
     void get().persist();
@@ -601,12 +636,13 @@ export const useBoard = create<BoardState>((set, get) => ({
       const isNowDone = isDoneColumn(to);
       const nextColumns = s.columns.map((column) => {
         if (column.id === fromColId && column.id === toColId) {
-          const taskIds = [...column.taskIds];
-          const currentIndex = taskIds.indexOf(taskId);
+          const activeTaskIds = column.taskIds.filter((id) => !s.tasks[id]?.archivedAt);
+          const archivedTaskIds = column.taskIds.filter((id) => s.tasks[id]?.archivedAt);
+          const currentIndex = activeTaskIds.indexOf(taskId);
           if (currentIndex === -1) return column;
-          taskIds.splice(currentIndex, 1);
-          taskIds.splice(toIndex, 0, taskId);
-          return { ...column, taskIds };
+          activeTaskIds.splice(currentIndex, 1);
+          activeTaskIds.splice(toIndex, 0, taskId);
+          return { ...column, taskIds: [...activeTaskIds, ...archivedTaskIds] };
         }
 
         if (column.id === fromColId) {
@@ -614,9 +650,10 @@ export const useBoard = create<BoardState>((set, get) => ({
         }
 
         if (column.id === toColId) {
-          const taskIds = [...column.taskIds];
-          taskIds.splice(toIndex, 0, taskId);
-          return { ...column, taskIds };
+          const activeTaskIds = column.taskIds.filter((id) => !s.tasks[id]?.archivedAt);
+          const archivedTaskIds = column.taskIds.filter((id) => s.tasks[id]?.archivedAt);
+          activeTaskIds.splice(toIndex, 0, taskId);
+          return { ...column, taskIds: [...activeTaskIds, ...archivedTaskIds] };
         }
 
         return column;
@@ -625,10 +662,10 @@ export const useBoard = create<BoardState>((set, get) => ({
       const task = s.tasks[taskId];
       let nextTasks = s.tasks;
       if (task && !wasDone && isNowDone) {
-        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: new Date().toISOString() } };
+        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: new Date().toISOString(), archivedAt: undefined } };
       }
       if (task && wasDone && !isNowDone) {
-        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: undefined } };
+        nextTasks = { ...s.tasks, [taskId]: { ...task, completedAt: undefined, archivedAt: undefined } };
       }
 
       return { ...s, columns: nextColumns, tasks: nextTasks };

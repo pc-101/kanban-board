@@ -44,6 +44,7 @@ type TaskRow = {
   description: string | null;
   due_date: string | null;
   completed_at: string | null;
+  archived_at: string | null;
 };
 
 type AssigneeRow = {
@@ -149,7 +150,7 @@ const loadNormalizedBoard = async (boardId: string) => {
   const [boardResult, columnsResult, tasksResult, assigneesResult] = await Promise.all([
     supabase.from("boards").select("id, title, color, updated_at").eq("id", boardId).maybeSingle<BoardRow>(),
     supabase.from("board_columns").select("id, title, position").eq("board_id", boardId).order("position"),
-    supabase.from("board_tasks").select("id, column_id, position, title, assignee, description, due_date, completed_at").eq("board_id", boardId).order("position"),
+    supabase.from("board_tasks").select("id, column_id, position, title, assignee, description, due_date, completed_at, archived_at").eq("board_id", boardId).order("position"),
     supabase.from("board_assignees").select("name, color, position").eq("board_id", boardId).order("position"),
   ]);
 
@@ -177,6 +178,7 @@ const loadNormalizedBoard = async (boardId: string) => {
       description: task.description ?? undefined,
       dueDate: task.due_date ?? undefined,
       completedAt: task.completed_at ?? undefined,
+      archivedAt: task.archived_at ?? undefined,
     }])),
     assignees: assigneeRows.map((assignee) => assignee.name),
     assigneeColors: Object.fromEntries(assigneeRows.map((assignee) => [assignee.name, assignee.color])),

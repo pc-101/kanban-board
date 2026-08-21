@@ -3,10 +3,11 @@ import { KeyboardEvent, useMemo, useState } from "react";
 import { colorForAssignee, UNASSIGNED_COLOR } from "@/lib/assignee-colors";
 import { useBoard, Task } from "@/lib/board-store";
 import TaskDetailModal from "./task-detail-modal";
-import { XIcon } from "./ui-icons";
+import { ArchiveIcon, XIcon } from "./ui-icons";
 
-export default function TaskCard({ task, columnId }: { task: Task; columnId: string }) {
+export default function TaskCard({ task, columnId, canArchive = false }: { task: Task; columnId: string; canArchive?: boolean }) {
   const removeTask = useBoard((state) => state.removeTask);
+  const archiveTask = useBoard((state) => state.archiveTask);
   const assigneeColors = useBoard((state) => state.assigneeColors);
   const [isOpen, setIsOpen] = useState(false);
   const completedLabel = useMemo(() => {
@@ -56,17 +57,34 @@ export default function TaskCard({ task, columnId }: { task: Task; columnId: str
               {completedLabel ? <span className="rounded-md bg-emerald-50 px-2 py-1 font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">Completed {completedLabel}</span> : null}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              removeTask(task.id, columnId);
-            }}
-            className="rounded-full p-1 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
-            aria-label="Delete task"
-          >
-            <XIcon />
-          </button>
+          <div className="flex shrink-0 items-center gap-0.5">
+            {canArchive ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  archiveTask(task.id, columnId);
+                }}
+                className="rounded-full p-1 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                aria-label={`Archive ${task.title}`}
+                title="Archive task"
+              >
+                <ArchiveIcon />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                removeTask(task.id, columnId);
+              }}
+              className="rounded-full p-1 text-slate-400 hover:bg-black/10 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-100"
+              aria-label={`Delete ${task.title}`}
+              title="Delete task"
+            >
+              <XIcon />
+            </button>
+          </div>
         </div>
       </div>
       {isOpen ? <TaskDetailModal task={task} onClose={() => setIsOpen(false)} /> : null}

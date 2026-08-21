@@ -2,6 +2,7 @@
 import { Draggable, DraggableProvidedDraggableProps, DraggableStateSnapshot } from "@hello-pangea/dnd";
 import { ReactNode, useMemo, useState } from "react";
 import { useBoard, Column } from "@/lib/board-store";
+import ArchivedTasksModal from "./archived-tasks-modal";
 import TaskCard from "./task-card";
 
 const alpha = (color: string, opacity: string) => color.startsWith("#") && color.length === 7 ? `${color}${opacity}` : color;
@@ -71,11 +72,16 @@ export default function ColumnView({
   isDraggingOver: boolean;
   placeholder: ReactNode;
 }) {
-  const { tasks, addTask, renameColumn, clearColumnTasks, boardColor } = useBoard();
+  const { tasks, addTask, renameColumn, archiveColumnTasks, boardColor } = useBoard();
   const [value, setValue] = useState("");
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const normalizedTitle = column.title.trim().toLowerCase();
   const isDoneColumn = normalizedTitle === "done";
   const isProgressColumn = normalizedTitle.includes("progress") || normalizedTitle.includes("doing");
+  const activeTaskIds = column.taskIds.filter((id) => !tasks[id]?.archivedAt);
+  const archivedTasks = column.taskIds
+    .map((id) => tasks[id])
+    .filter((task): task is NonNullable<typeof task> => Boolean(task?.archivedAt));
 
   const styles = useMemo(() => ({
     columnBg: `linear-gradient(180deg, ${alpha(boardColor, "12")} 0%, ${alpha(boardColor, "08")} 42%, ${alpha(boardColor, "05")} 100%)`,
@@ -106,22 +112,35 @@ export default function ColumnView({
             className="inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-semibold"
             style={{ backgroundColor: styles.countBg, color: styles.countText }}
           >
-            {column.taskIds.length}
+            {activeTaskIds.length}
           </span>
         </div>
-        {isDoneColumn && column.taskIds.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => clearColumnTasks(column.id)}
-            className="mt-2 rounded-md border px-2 py-1 text-xs font-medium text-slate-500 hover:bg-white/60 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-white/5"
-          >
-            Clear all
-          </button>
+        {isDoneColumn && (activeTaskIds.length > 0 || archivedTasks.length > 0) ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {activeTaskIds.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => archiveColumnTasks(column.id)}
+                className="rounded-md border px-2 py-1 text-xs font-medium text-slate-500 hover:bg-white/60 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-white/5"
+              >
+                Archive all
+              </button>
+            ) : null}
+            {archivedTasks.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsArchiveOpen(true)}
+                className="rounded-md border px-2 py-1 text-xs font-medium text-slate-500 hover:bg-white/60 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-white/5"
+              >
+                Archived ({archivedTasks.length})
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
       <div className="relative space-y-2">
-        {column.taskIds.map((id, idx) => (
+        {activeTaskIds.map((id, idx) => (
           <Draggable draggableId={id} index={idx} key={id}>
             {(provided, snapshot) => (
               <div
@@ -130,12 +149,12 @@ export default function ColumnView({
                 {...provided.dragHandleProps}
                 style={getDraggableStyle(provided.draggableProps.style, snapshot)}
               >
-                <TaskCard task={tasks[id]} columnId={column.id} />
+                <TaskCard task={tasks[id]} columnId={column.id} canArchive={isDoneColumn} />
               </div>
             )}
           </Draggable>
         ))}
-        {column.taskIds.length === 0 && isDraggingOver ? (
+        {activeTaskIds.length === 0 && isDraggingOver ? (
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-lg border-2 border-dashed"
             style={{
@@ -174,6 +193,9 @@ export default function ColumnView({
           Add
         </button>
       </form>
+      {isArchiveOpen ? (
+        <ArchivedTasksModal tasks={archivedTasks} onClose={() => setIsArchiveOpen(false)} />
+      ) : null}
     </div>
   );
 }

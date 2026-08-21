@@ -12,7 +12,9 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Create and customize color-coded shared assignees from a compact toolbar dropdown and assign them to tasks.
 - Show unassigned tasks explicitly with a reserved neutral color.
 - Mark tasks with a completed timestamp when moved into Done.
-- Clear all Done tasks when completed work should be removed from the board.
+- Archive individual or all Done tasks, browse archived work, and restore tasks without deleting their history.
+- Automatically archive tasks 14 days after completion through an hourly Supabase Cron job.
+- Keep permanent task deletion as an explicit, single-task action.
 - Customize board accent colors.
 - Sync normalized board, column, task, and assignee records to Supabase, with `localStorage` as fallback/cache.
 - Merge concurrent edits to different board entities and reflect them through Supabase Realtime, with a 10-second polling fallback.
@@ -27,6 +29,7 @@ A Next.js 14 Kanban board for organizing project work across multiple boards. It
 - Tailwind CSS
 - Zustand
 - Supabase
+- Supabase Cron (`pg_cron`)
 - @hello-pangea/dnd
 - Vercel, Netlify, and GitHub Pages
 

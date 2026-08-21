@@ -16,7 +16,8 @@ Core capabilities:
 - shared assignee list with color-coded pills, search, add, color customization, and manage flows
 - explicit unassigned task labels with a reserved neutral color
 - completed timestamps for tasks moved to Done
-- bulk clearing for Done tasks
+- reversible individual and bulk archiving for Done tasks
+- hourly automatic archival 14 days after completion
 - board accent colors
 - local cache/fallback through `localStorage`
 - Supabase persistence, Realtime updates, and polling fallback
@@ -37,6 +38,7 @@ components/
   assignee-manager.tsx      Create/remove shared assignees
   column.tsx                Column view with inline editing and task creation
   task-card.tsx             Draggable task card
+  archived-tasks-modal.tsx  Browse and restore archived Done tasks
   task-detail-modal.tsx     Editable task detail modal
   header.tsx                Top navigation
   theme-provider.tsx        Theme provider wrapper
@@ -107,7 +109,8 @@ public.board_tasks (
   assignee text,
   description text,
   due_date text,
-  completed_at timestamptz
+  completed_at timestamptz,
+  archived_at timestamptz
 )
 
 public.board_assignees (
@@ -129,7 +132,11 @@ columns
 tasks
 ```
 
-Task records can include title, assignee, description, due date, and completed timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. The unassigned state uses a reserved neutral color that is intentionally excluded from the selectable assignee palette. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
+Task records can include title, assignee, description, due date, completed timestamp, and archived timestamp fields. Assignee colors live at the board level in `assigneeColors`, keyed by assignee name, so tasks can keep a simple assignee string. The unassigned state uses a reserved neutral color that is intentionally excluded from the selectable assignee palette. Moving a task into a column named `Done` records `completedAt`; moving it back out clears that timestamp.
+
+Archiving sets `archivedAt` without removing the task from its Done column or deleting its normalized database row. Archived tasks are filtered from the active Done list and remain available from the **Archived** dialog, where they can be restored. **Archive all** applies the same reversible state to every visible Done task. The X control remains the only permanent task-deletion action.
+
+The `archive-stale-board-tasks` Supabase Cron job runs at the start of every hour and archives tasks whose `completed_at` value is at least 14 days old. The job updates each affected parent board timestamp so Realtime subscribers and the polling fallback reload the archived state. Because this runs in Postgres, archival does not depend on a browser tab remaining open.
 
 The `boards.data` JSON column remains temporarily as a compatibility copy for boards created under the original schema. Current clients read the normalized tables and must not treat that JSON copy as the shared source of truth.
 
@@ -281,6 +288,9 @@ Use migrations for:
 - functions
 - policies
 - grants
+- scheduled database jobs
+
+The task-archiving migration enables Supabase Cron through the `pg_cron` extension. Applying the migration creates the hourly job automatically. Job runs can be inspected in **Supabase Dashboard → Integrations → Cron**, or in the local database's `cron.job_run_details` table.
 
 ## Seed Data
 
@@ -353,6 +363,8 @@ pnpm build:production
 This calls `supabase db push --db-url ...` and then `next build`. Supabase records applied migration versions, so later deploys apply only pending files from `supabase/migrations`. Netlify previews and Vercel Preview or Development builds use `pnpm build` and do not receive or use the production database URL.
 
 If another host is used, run `pnpm db:push:production` once with the required production variables available before building. The versioned files under `supabase/migrations/` are the only supported schema setup path; this avoids a separate manual SQL file drifting out of date.
+
+The archive UI requires the `archived_at` migration. For GitHub Pages, which does not apply production migrations during its frontend build, run `pnpm db:push:production` before deploying the archive-enabled frontend. Netlify and Vercel Production builds apply the migration through their existing production build routes.
 
 The starter currently uses permissive anonymous policies so the static GitHub Pages app can read and write without authentication. This is useful for learning and demos. A real private board should add Supabase Auth and restrict access by user, board, or workspace.
 
